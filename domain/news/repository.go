@@ -6,7 +6,7 @@ import "github.com/google/uuid"
 type Repository interface {
 	Save(News) error
 	GetAll() ([]News, error)
-	GetById(uuid.UUID) (*News, error)
+	GetById(string) (*News, error)
 	// GetByTopic(string) error
 	Update(News) error
 	Delete(uuid.UUID) error

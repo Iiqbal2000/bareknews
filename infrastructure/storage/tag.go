@@ -5,17 +5,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/huandu/go-sqlbuilder"
 )
 
-type TagStorage struct {
+type Tag struct {
 	Conn *sql.DB
 }
 
-var tags = sqlbuilder.NewStruct(new(bareknews.Tags))
+var tags = sqlbuilder.NewStruct(new(domain.Tags))
 
-func (t TagStorage) Save(tag bareknews.Tags) error {
+func (t Tag) Save(tag domain.Tags) error {
 	query, args := sqlbuilder.InsertInto("tags").
 		Cols("id", "name", "slug").
 		Values(tag.ID, tag.Name, tag.Slug).
@@ -29,7 +29,7 @@ func (t TagStorage) Save(tag bareknews.Tags) error {
 	return nil
 }
 
-func (t TagStorage) Update(tag bareknews.Tags) error {
+func (t Tag) Update(tag domain.Tags) error {
 	builder := sqlbuilder.NewUpdateBuilder()
 	builder.Update("tags")
 	builder.Set(
@@ -41,7 +41,7 @@ func (t TagStorage) Update(tag bareknews.Tags) error {
 	_, err := t.Conn.Exec(query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("not found")	
+			return fmt.Errorf("not found")
 		} else {
 			return fmt.Errorf("failure when updating a tag: %s", err.Error())
 		}
@@ -50,48 +50,48 @@ func (t TagStorage) Update(tag bareknews.Tags) error {
 	return nil
 }
 
-func (t TagStorage) GetById(id string) (*bareknews.Tags, error) {
+func (t Tag) GetById(id string) (*domain.Tags, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select("id", "name", "slug")
 	builder.From("tags")
 	builder.Where(builder.Equal("id", id))
 	query, args := builder.Build()
 	row := t.Conn.QueryRow(query, args...)
-	
-	tag := &bareknews.Tags{}
+
+	tag := &domain.Tags{}
 	err := row.Scan(tags.Addr(tag)...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return &bareknews.Tags{}, fmt.Errorf("not found")	
+			return &domain.Tags{}, fmt.Errorf("not found")
 		} else {
-			return &bareknews.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
+			return &domain.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
 		}
 	}
 
 	return tag, nil
 }
 
-func (t TagStorage) GetByNewsId(id string) ([]bareknews.Tags, error) {
+func (t Tag) GetByNewsId(id string) ([]domain.Tags, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Distinct()
 	builder.Select("id", "name", "slug")
 	builder.From("tags")
-	builder.Join("news_tags", builder.Equal("news_tags.newsID", id))
+	builder.Join("topics", builder.Equal("topics.newsID", id))
 	query, args := builder.Build()
 	rows, err := t.Conn.Query(query, args...)
 	if err != nil {
-		return []bareknews.Tags{}, fmt.Errorf("failure when querying tags: %s", err.Error())
+		return []domain.Tags{}, fmt.Errorf("failure when querying tags: %s", err.Error())
 	}
 
 	defer rows.Close()
 
-	results := make([]bareknews.Tags, 0)
+	results := make([]domain.Tags, 0)
 
 	for rows.Next() {
-		t := bareknews.Tags{}
+		t := domain.Tags{}
 		err = rows.Scan(tags.Addr(&t)...)
 		if err != nil {
-			return []bareknews.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
+			return []domain.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
 		}
 		results = append(results, t)
 	}
@@ -99,46 +99,46 @@ func (t TagStorage) GetByNewsId(id string) ([]bareknews.Tags, error) {
 	return results, nil
 }
 
-func (t TagStorage) GetByName(name string) (bareknews.Tags, error) {
+func (t Tag) GetByName(name string) (domain.Tags, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select("id", "name", "slug")
 	builder.From("tags")
 	builder.Where(builder.Equal("name", name))
 	query, args := builder.Build()
 	row := t.Conn.QueryRow(query, args...)
-	
-	tag := &bareknews.Tags{}
+
+	tag := &domain.Tags{}
 	err := row.Scan(tags.Addr(tag)...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return bareknews.Tags{}, fmt.Errorf("not found")	
+			return domain.Tags{}, fmt.Errorf("not found")
 		} else {
-			return bareknews.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
+			return domain.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
 		}
 	}
 
 	return *tag, nil
 }
 
-func (t TagStorage) GetAll() ([]bareknews.Tags, error) {
+func (t Tag) GetAll() ([]domain.Tags, error) {
 	query, args := sqlbuilder.Select("id", "name", "slug").
 		From("tags").
 		Build()
 
 	rows, err := t.Conn.Query(query, args...)
 	if err != nil {
-		return []bareknews.Tags{}, fmt.Errorf("failure when querying tags: %s", err.Error())
+		return []domain.Tags{}, fmt.Errorf("failure when querying tags: %s", err.Error())
 	}
 
 	defer rows.Close()
 
-	results := make([]bareknews.Tags, 0)
+	results := make([]domain.Tags, 0)
 
 	for rows.Next() {
-		t := bareknews.Tags{}
+		t := domain.Tags{}
 		err = rows.Scan(tags.Addr(&t)...)
 		if err != nil {
-			return []bareknews.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
+			return []domain.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
 		}
 		results = append(results, t)
 	}
@@ -146,7 +146,7 @@ func (t TagStorage) GetAll() ([]bareknews.Tags, error) {
 	return results, nil
 }
 
-func (t TagStorage) GetByNames(names ...string) ([]bareknews.Tags, error) {
+func (t Tag) GetByNames(names ...string) ([]domain.Tags, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	listMark := sqlbuilder.List(names)
 	builder.Select("id", "name", "slug")
@@ -156,18 +156,18 @@ func (t TagStorage) GetByNames(names ...string) ([]bareknews.Tags, error) {
 
 	rows, err := t.Conn.Query(query, args...)
 	if err != nil {
-		return []bareknews.Tags{}, fmt.Errorf("failure when querying tags: %s", err.Error())
+		return []domain.Tags{}, fmt.Errorf("failure when querying tags: %s", err.Error())
 	}
 
 	defer rows.Close()
 
-	results := make([]bareknews.Tags, 0)
+	results := make([]domain.Tags, 0)
 
 	for rows.Next() {
-		t := bareknews.Tags{}
+		t := domain.Tags{}
 		err = rows.Scan(tags.Addr(&t)...)
 		if err != nil {
-			return []bareknews.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
+			return []domain.Tags{}, fmt.Errorf("failure when querying tags in the iteration: %s", err.Error())
 		}
 		results = append(results, t)
 	}
@@ -175,7 +175,7 @@ func (t TagStorage) GetByNames(names ...string) ([]bareknews.Tags, error) {
 	return results, nil
 }
 
-func (t TagStorage) Delete(id string) error {
+func (t Tag) Delete(id string) error {
 	d := sqlbuilder.NewDeleteBuilder()
 	d.DeleteFrom("tags")
 	d.Where(d.Equal("id", id))

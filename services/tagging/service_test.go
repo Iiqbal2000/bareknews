@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/tag"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
@@ -13,13 +13,16 @@ import (
 func TestCreate(t *testing.T) {
 	t.Run("Valid", func(t *testing.T) {
 		store := &tag.RepositoryMock{
-			SaveFunc: func(tags bareknews.Tags) error {
+			SaveFunc: func(tags domain.Tags) error {
 				return nil
+			},
+			GetByNameFunc: func(names string) (domain.Tags, error) {
+				return domain.Tags{}, nil
 			},
 		}
 
 		svc := New(store)
-		_, err := svc.Create("teg 1")
+		_, err := svc.Create("tag 1")
 
 		is := is.New(t)
 		is.Equal(err, nil)
@@ -28,7 +31,7 @@ func TestCreate(t *testing.T) {
 
 	t.Run("Invalid: blank tag name", func(t *testing.T) {
 		store := &tag.RepositoryMock{
-			SaveFunc: func(tags bareknews.Tags) error {
+			SaveFunc: func(tags domain.Tags) error {
 				return nil
 			},
 		}
@@ -37,13 +40,13 @@ func TestCreate(t *testing.T) {
 		_, err := svc.Create("")
 
 		is := is.New(t)
-		is.Equal(err, bareknews.ErrBlankTag)
+		is.Equal(err, domain.ErrBlankTag)
 		is.Equal(len(store.SaveCalls()), 0)
 	})
 
 	t.Run("Invalid: tag name too long", func(t *testing.T) {
 		store := &tag.RepositoryMock{
-			SaveFunc: func(tags bareknews.Tags) error {
+			SaveFunc: func(tags domain.Tags) error {
 				return nil
 			},
 		}
@@ -58,13 +61,13 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	t.Run("Valid", func(t *testing.T) {
-		tg, _ := bareknews.NewTags("tag 1")
+		tg, _ := domain.NewTags("tag 1")
 
 		store := &tag.RepositoryMock{
-			GetByIdFunc: func(id string) (*bareknews.Tags, error) {
+			GetByIdFunc: func(id string) (*domain.Tags, error) {
 				return tg, nil
 			},
-			UpdateFunc: func(tagsIn bareknews.Tags) error {
+			UpdateFunc: func(tagsIn domain.Tags) error {
 				tg = &tagsIn
 				return nil
 			},
@@ -79,10 +82,10 @@ func TestUpdate(t *testing.T) {
 
 	t.Run("Invalid: Not found", func(t *testing.T) {
 		store := &tag.RepositoryMock{
-			GetByIdFunc: func(id string) (*bareknews.Tags, error) {
+			GetByIdFunc: func(id string) (*domain.Tags, error) {
 				return nil, sql.ErrNoRows
 			},
-			UpdateFunc: func(tagsIn bareknews.Tags) error {
+			UpdateFunc: func(tagsIn domain.Tags) error {
 				return nil
 			},
 		}
@@ -98,7 +101,7 @@ func TestUpdate(t *testing.T) {
 func TestDelete(t *testing.T) {
 	t.Run("Valid", func(t *testing.T) {
 		store := &tag.RepositoryMock{
-			GetByIdFunc: func(s string) (*bareknews.Tags, error) {
+			GetByIdFunc: func(s string) (*domain.Tags, error) {
 				return nil, nil
 			},
 			DeleteFunc: func(s string) error {

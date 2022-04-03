@@ -1,4 +1,4 @@
-package bareknews
+package domain
 
 import (
 	"fmt"

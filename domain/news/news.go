@@ -3,7 +3,7 @@ package news
 import (
 	"errors"
 
-	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/google/uuid"
 	"github.com/go-ozzo/ozzo-validation/v4"
 )
@@ -14,13 +14,13 @@ var (
 
 // Agregates
 type News struct {
-	Post *bareknews.Posts
-	Slug bareknews.Slug
-	Tags []bareknews.Tags
+	Post domain.Posts
+	Slug domain.Slug	`json:"slug"`
+	Tags []domain.Tags
 }
 
-func New(title, body string, status bareknews.Status, tags []bareknews.Tags) *News {
-	post := &bareknews.Posts{
+func New(title, body string, status domain.Status, tags []domain.Tags) *News {
+	post := domain.Posts{
 		ID: uuid.New(),
 		Status: status,
 		Title: title,
@@ -29,7 +29,7 @@ func New(title, body string, status bareknews.Status, tags []bareknews.Tags) *Ne
 
 	return &News{
 		Post: post,
-		Slug: bareknews.NewSlug(post.Title),
+		Slug: domain.NewSlug(post.Title),
 		Tags: tags,
 	}
 }
@@ -40,7 +40,7 @@ func (n News) Validate() error {
 		validation.Field(&n.Post.Body, validation.Required),
 		validation.Field(&n.Post.Status,
 			validation.Required,
-			validation.In(bareknews.Publish, bareknews.Draft, bareknews.Deleted),
+			validation.In(domain.Publish, domain.Draft, domain.Deleted),
 		),
 	)
 }
@@ -51,10 +51,10 @@ func (n *News) ChangeTitle(newTitle string) {
 }
 
 func (n *News) changeSlug() {
-	n.Slug = bareknews.NewSlug(n.Post.Title)
+	n.Slug = domain.NewSlug(n.Post.Title)
 }
 
-func (n *News) ChangeStatus(newStatus bareknews.Status) {
+func (n *News) ChangeStatus(newStatus domain.Status) {
 	n.Post.Status = newStatus
 }
 
@@ -62,6 +62,6 @@ func (n *News) ChangeBody(newBody string) {
 	n.Post.Body = newBody
 }
 
-func (n *News) ChangeTags(newTags []bareknews.Tags) {
+func (n *News) ChangeTags(newTags []domain.Tags) {
 	n.Tags = newTags
 }

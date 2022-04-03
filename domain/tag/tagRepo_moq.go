@@ -4,7 +4,7 @@
 package tag
 
 import (
-	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/domain"
 	"sync"
 )
 
@@ -53,25 +53,25 @@ type RepositoryMock struct {
 	DeleteFunc func(s string) error
 
 	// GetAllFunc mocks the GetAll method.
-	GetAllFunc func() ([]bareknews.Tags, error)
+	GetAllFunc func() ([]domain.Tags, error)
 
 	// GetByIdFunc mocks the GetById method.
-	GetByIdFunc func(s string) (*bareknews.Tags, error)
+	GetByIdFunc func(s string) (*domain.Tags, error)
 
 	// GetByNameFunc mocks the GetByName method.
-	GetByNameFunc func(names string) (bareknews.Tags, error)
+	GetByNameFunc func(names string) (domain.Tags, error)
 
 	// GetByNamesFunc mocks the GetByNames method.
-	GetByNamesFunc func(names ...string) ([]bareknews.Tags, error)
+	GetByNamesFunc func(names ...string) ([]domain.Tags, error)
 
 	// GetByNewsIdFunc mocks the GetByNewsId method.
-	GetByNewsIdFunc func(id string) ([]bareknews.Tags, error)
+	GetByNewsIdFunc func(id string) ([]domain.Tags, error)
 
 	// SaveFunc mocks the Save method.
-	SaveFunc func(tags bareknews.Tags) error
+	SaveFunc func(tags domain.Tags) error
 
 	// UpdateFunc mocks the Update method.
-	UpdateFunc func(tags bareknews.Tags) error
+	UpdateFunc func(tags domain.Tags) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -106,12 +106,12 @@ type RepositoryMock struct {
 		// Save holds details about calls to the Save method.
 		Save []struct {
 			// Tags is the tags argument value.
-			Tags bareknews.Tags
+			Tags domain.Tags
 		}
 		// Update holds details about calls to the Update method.
 		Update []struct {
 			// Tags is the tags argument value.
-			Tags bareknews.Tags
+			Tags domain.Tags
 		}
 	}
 	lockDelete      sync.RWMutex
@@ -156,7 +156,7 @@ func (mock *RepositoryMock) DeleteCalls() []struct {
 }
 
 // GetAll calls GetAllFunc.
-func (mock *RepositoryMock) GetAll() ([]bareknews.Tags, error) {
+func (mock *RepositoryMock) GetAll() ([]domain.Tags, error) {
 	if mock.GetAllFunc == nil {
 		panic("RepositoryMock.GetAllFunc: method is nil but Repository.GetAll was just called")
 	}
@@ -182,7 +182,7 @@ func (mock *RepositoryMock) GetAllCalls() []struct {
 }
 
 // GetById calls GetByIdFunc.
-func (mock *RepositoryMock) GetById(s string) (*bareknews.Tags, error) {
+func (mock *RepositoryMock) GetById(s string) (*domain.Tags, error) {
 	if mock.GetByIdFunc == nil {
 		panic("RepositoryMock.GetByIdFunc: method is nil but Repository.GetById was just called")
 	}
@@ -213,7 +213,7 @@ func (mock *RepositoryMock) GetByIdCalls() []struct {
 }
 
 // GetByName calls GetByNameFunc.
-func (mock *RepositoryMock) GetByName(names string) (bareknews.Tags, error) {
+func (mock *RepositoryMock) GetByName(names string) (domain.Tags, error) {
 	if mock.GetByNameFunc == nil {
 		panic("RepositoryMock.GetByNameFunc: method is nil but Repository.GetByName was just called")
 	}
@@ -244,7 +244,7 @@ func (mock *RepositoryMock) GetByNameCalls() []struct {
 }
 
 // GetByNames calls GetByNamesFunc.
-func (mock *RepositoryMock) GetByNames(names ...string) ([]bareknews.Tags, error) {
+func (mock *RepositoryMock) GetByNames(names ...string) ([]domain.Tags, error) {
 	if mock.GetByNamesFunc == nil {
 		panic("RepositoryMock.GetByNamesFunc: method is nil but Repository.GetByNames was just called")
 	}
@@ -275,7 +275,7 @@ func (mock *RepositoryMock) GetByNamesCalls() []struct {
 }
 
 // GetByNewsId calls GetByNewsIdFunc.
-func (mock *RepositoryMock) GetByNewsId(id string) ([]bareknews.Tags, error) {
+func (mock *RepositoryMock) GetByNewsId(id string) ([]domain.Tags, error) {
 	if mock.GetByNewsIdFunc == nil {
 		panic("RepositoryMock.GetByNewsIdFunc: method is nil but Repository.GetByNewsId was just called")
 	}
@@ -306,12 +306,12 @@ func (mock *RepositoryMock) GetByNewsIdCalls() []struct {
 }
 
 // Save calls SaveFunc.
-func (mock *RepositoryMock) Save(tags bareknews.Tags) error {
+func (mock *RepositoryMock) Save(tags domain.Tags) error {
 	if mock.SaveFunc == nil {
 		panic("RepositoryMock.SaveFunc: method is nil but Repository.Save was just called")
 	}
 	callInfo := struct {
-		Tags bareknews.Tags
+		Tags domain.Tags
 	}{
 		Tags: tags,
 	}
@@ -325,10 +325,10 @@ func (mock *RepositoryMock) Save(tags bareknews.Tags) error {
 // Check the length with:
 //     len(mockedRepository.SaveCalls())
 func (mock *RepositoryMock) SaveCalls() []struct {
-	Tags bareknews.Tags
+	Tags domain.Tags
 } {
 	var calls []struct {
-		Tags bareknews.Tags
+		Tags domain.Tags
 	}
 	mock.lockSave.RLock()
 	calls = mock.calls.Save
@@ -337,12 +337,12 @@ func (mock *RepositoryMock) SaveCalls() []struct {
 }
 
 // Update calls UpdateFunc.
-func (mock *RepositoryMock) Update(tags bareknews.Tags) error {
+func (mock *RepositoryMock) Update(tags domain.Tags) error {
 	if mock.UpdateFunc == nil {
 		panic("RepositoryMock.UpdateFunc: method is nil but Repository.Update was just called")
 	}
 	callInfo := struct {
-		Tags bareknews.Tags
+		Tags domain.Tags
 	}{
 		Tags: tags,
 	}
@@ -356,10 +356,10 @@ func (mock *RepositoryMock) Update(tags bareknews.Tags) error {
 // Check the length with:
 //     len(mockedRepository.UpdateCalls())
 func (mock *RepositoryMock) UpdateCalls() []struct {
-	Tags bareknews.Tags
+	Tags domain.Tags
 } {
 	var calls []struct {
-		Tags bareknews.Tags
+		Tags domain.Tags
 	}
 	mock.lockUpdate.RLock()
 	calls = mock.calls.Update

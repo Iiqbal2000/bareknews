@@ -3,17 +3,19 @@ package storage
 import (
 	"testing"
 
-	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/news"
 	"github.com/Iiqbal2000/bareknews/services/tagging"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/matryer/is"
 )
 
+const dbfile = "./../../mygopher.db"
+
 func TestSaveNews(t *testing.T) {
-	conn := Run()
-	newsStore := NewsStorage{conn}
-	tagsStore := TagStorage{conn}
+	conn := Run(dbfile,true)
+	newsStore := News{conn}
+	tagsStore := Tag{conn}
 	tagsSvc := tagging.New(tagsStore)
 
 	tg1, err := tagsSvc.Create(gofakeit.Noun())
@@ -26,7 +28,7 @@ func TestSaveNews(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	want := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), bareknews.Draft, []bareknews.Tags{tg1, tg2})
+	want := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []domain.Tags{tg1, tg2})
 	err = newsStore.Save(*want)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -34,7 +36,7 @@ func TestSaveNews(t *testing.T) {
 
 	is := is.New(t)
 
-	got, err := newsStore.GetById(want.Post.ID)
+	got, err := newsStore.GetById(want.Post.ID.String())
 	is.NoErr(err)
 	is.True(got != nil)
 	is.Equal(got.Post.Title, want.Post.Title)
@@ -45,9 +47,9 @@ func TestSaveNews(t *testing.T) {
 }
 
 func TestUpdateNews(t *testing.T) {
-	conn := Run()
-	newsStore := NewsStorage{conn}
-	tagsStore := TagStorage{conn}
+	conn := Run(dbfile,true)
+	newsStore := News{conn}
+	tagsStore := Tag{conn}
 	tagsSvc := tagging.New(tagsStore)
 
 	tg1, err := tagsSvc.Create(gofakeit.Noun())
@@ -65,15 +67,15 @@ func TestUpdateNews(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	news := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), bareknews.Draft, []bareknews.Tags{tg1, tg2})
+	news := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []domain.Tags{tg1, tg2})
 	err = newsStore.Save(*news)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	wantTitle := gofakeit.Sentence(10)
-	wantTag := []bareknews.Tags{tg3}
-	wantStatus := bareknews.Publish
+	wantTag := []domain.Tags{tg3}
+	wantStatus := domain.Publish
 
 	news.ChangeTitle(wantTitle)
 	news.ChangeTags(wantTag)
@@ -86,7 +88,7 @@ func TestUpdateNews(t *testing.T) {
 
 	is := is.New(t)
 
-	got, err := newsStore.GetById(news.Post.ID)
+	got, err := newsStore.GetById(news.Post.ID.String())
 	is.NoErr(err)
 	is.True(got != nil)
 	is.Equal(got.Post.Title, wantTitle)
@@ -95,9 +97,9 @@ func TestUpdateNews(t *testing.T) {
 }
 
 func TestGetByID(t *testing.T) {
-	conn := Run()
-	newsStore := NewsStorage{conn}
-	tagsStore := TagStorage{conn}
+	conn := Run(dbfile,true)
+	newsStore := News{conn}
+	tagsStore := Tag{conn}
 	tagsSvc := tagging.New(tagsStore)
 
 	tg1, err := tagsSvc.Create(gofakeit.Noun())
@@ -110,13 +112,13 @@ func TestGetByID(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	want := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), bareknews.Draft, []bareknews.Tags{tg1, tg2})
+	want := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []domain.Tags{tg1, tg2})
 	err = newsStore.Save(*want)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	got, err := newsStore.GetById(want.Post.ID)
+	got, err := newsStore.GetById(want.Post.ID.String())
 
 	is := is.New(t)
 	is.NoErr(err)
@@ -129,9 +131,9 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestGetAllNews(t *testing.T) {
-	conn := Run()
-	newsStore := NewsStorage{conn}
-	tagsStore := TagStorage{conn}
+	conn := Run(dbfile,true)
+	newsStore := News{conn}
+	tagsStore := Tag{conn}
 	tagsSvc := tagging.New(tagsStore)
 
 	tg1, err := tagsSvc.Create(gofakeit.Noun())
@@ -144,13 +146,13 @@ func TestGetAllNews(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	wantNews1 := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), bareknews.Draft, []bareknews.Tags{tg1})
+	wantNews1 := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []domain.Tags{tg1})
 	err = newsStore.Save(*wantNews1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	wantNews2 := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), bareknews.Draft, []bareknews.Tags{tg2})
+	wantNews2 := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []domain.Tags{tg2})
 	err = newsStore.Save(*wantNews2)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -175,9 +177,9 @@ func TestGetAllNews(t *testing.T) {
 }
 
 func TestDeleteNews(t *testing.T) {
-	conn := Run()
-	newsStore := NewsStorage{conn}
-	tagsStore := TagStorage{conn}
+	conn := Run(dbfile,true)
+	newsStore := News{conn}
+	tagsStore := Tag{conn}
 	tagsSvc := tagging.New(tagsStore)
 
 	tg1, err := tagsSvc.Create(gofakeit.Noun())
@@ -190,7 +192,7 @@ func TestDeleteNews(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	news := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), bareknews.Draft, []bareknews.Tags{tg1, tg2})
+	news := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []domain.Tags{tg1, tg2})
 	err = newsStore.Save(*news)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -201,6 +203,6 @@ func TestDeleteNews(t *testing.T) {
 	err = newsStore.Delete(news.Post.ID)
 	is.NoErr(err)
 
-	_, err = newsStore.GetById(news.Post.ID)
+	_, err = newsStore.GetById(news.Post.ID.String())
 	is.True(err != nil)
 }

@@ -1,15 +1,17 @@
 package tag
 
-import "github.com/Iiqbal2000/bareknews"
+import (
+	"github.com/Iiqbal2000/bareknews/domain"
+)
 
 //go:generate moq -out tagRepo_moq.go . Repository
 type Repository interface {
-	Save(bareknews.Tags) error
-	Update(bareknews.Tags) error
-	GetById(string) (*bareknews.Tags, error)
-	GetByNewsId(id string) ([]bareknews.Tags, error)
-	GetByName(names string) (bareknews.Tags, error)
-	GetByNames(names ...string) ([]bareknews.Tags, error)
-	GetAll() ([]bareknews.Tags, error)
+	Save(domain.Tags) error
+	Update(domain.Tags) error
+	GetById(string) (*domain.Tags, error)
+	GetByNewsId(id string) ([]domain.Tags, error)
+	GetByName(names string) (domain.Tags, error)
+	GetByNames(names ...string) ([]domain.Tags, error)
+	GetAll() ([]domain.Tags, error)
 	Delete(id string) error
 }

@@ -1,24 +1,28 @@
 package posting
 
 import (
+	"log"
 	"strings"
 
-	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/news"
+	"github.com/Iiqbal2000/bareknews/services/tagging"
 	"github.com/google/uuid"
 )
 
 type Service struct {
-	storage news.Repository
+	storage    news.Repository
+	taggingSvc tagging.Service
 }
 
-func New(repo news.Repository) Service {
-	return Service{repo}
+func New(repo news.Repository, taggingSvc tagging.Service) Service {
+	return Service{repo, taggingSvc}
 }
 
-func (s Service) Create(title, body, status string, tags []bareknews.Tags) error {
+func (s Service) Create(title, body, status string, tagsIn []string) error {
 	status = strings.ToLower(status)
-	news := news.New(title, body, bareknews.Status(status), tags)
+	tags := s.taggingSvc.GetByNames(tagsIn)
+	news := news.New(title, body, domain.Status(status), tags)
 	err := news.Validate()
 	if err != nil {
 		return err
@@ -32,9 +36,10 @@ func (s Service) Create(title, body, status string, tags []bareknews.Tags) error
 	return nil
 }
 
-func (s Service) GetById(id uuid.UUID) (news.News, error) {
+func (s Service) GetById(id string) (news.News, error) {
 	result, err := s.storage.GetById(id)
 	if err != nil {
+		log.Println(err.Error())
 		return news.News{}, err
 	}
 
@@ -50,8 +55,8 @@ func (s Service) GetAll() ([]news.News, error) {
 	return result, nil
 }
 
-func (s Service) Update(id uuid.UUID, title, body, status string, tags []bareknews.Tags) error {
-	news, err := s.storage.GetById(id)
+func (s Service) Update(id uuid.UUID, title, body, status string, tags []domain.Tags) error {
+	news, err := s.storage.GetById(id.String())
 	if err != nil {
 		return err
 	}
@@ -65,7 +70,7 @@ func (s Service) Update(id uuid.UUID, title, body, status string, tags []barekne
 	}
 
 	if status != "" && strings.TrimSpace(status) != "" {
-		news.ChangeStatus(bareknews.Status(status))
+		news.ChangeStatus(domain.Status(status))
 	}
 
 	if len(tags) > 0 {
@@ -86,7 +91,7 @@ func (s Service) Update(id uuid.UUID, title, body, status string, tags []barekne
 }
 
 func (s Service) Delete(id uuid.UUID) error {
-	_, err := s.storage.GetById(id)
+	_, err := s.storage.GetById(id.String())
 	if err != nil {
 		return err
 	}

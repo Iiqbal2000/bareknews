@@ -1,10 +1,10 @@
-package bareknews
+package domain
 
 import (
 	"errors"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/google/uuid"
-	"github.com/go-ozzo/ozzo-validation/v4"
 )
 
 var (
@@ -13,9 +13,9 @@ var (
 
 // Value object
 type Tags struct {
-	ID   uuid.UUID
-	Name string
-	Slug Slug
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Slug Slug      `json:"slug"`
 }
 
 func NewTags(tagName string) (*Tags, error) {
@@ -24,7 +24,7 @@ func NewTags(tagName string) (*Tags, error) {
 	}
 
 	tag := Tags{
-		ID: uuid.New(),
+		ID:   uuid.New(),
 		Name: tagName,
 		Slug: NewSlug(tagName),
 	}
