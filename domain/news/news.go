@@ -35,13 +35,13 @@ func New(title, body string, status domain.Status, tags []domain.Tags) *News {
 }
 
 func (n News) Validate() error {
+	if err := n.Post.Status.Validate(); err != nil {
+		return err
+	}
+	
 	return validation.ValidateStruct(&n, 
 		validation.Field(&n.Post.Title, validation.Required, validation.Length(5, 50)),
 		validation.Field(&n.Post.Body, validation.Required),
-		validation.Field(&n.Post.Status,
-			validation.Required,
-			validation.In(domain.Publish, domain.Draft, domain.Deleted),
-		),
 	)
 }
 
