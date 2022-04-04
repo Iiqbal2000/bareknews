@@ -19,10 +19,6 @@ type Tags struct {
 }
 
 func NewTags(tagName string) (*Tags, error) {
-	if tagName == "" {
-		return &Tags{}, ErrBlankTag
-	}
-
 	tag := Tags{
 		ID:   uuid.New(),
 		Name: tagName,
