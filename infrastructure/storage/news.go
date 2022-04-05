@@ -15,7 +15,7 @@ type News struct {
 	Conn *sql.DB
 }
 
-var post = sqlbuilder.NewStruct(new(domain.Posts))
+var post = sqlbuilder.NewStruct(new(domain.Post))
 
 func (s News) Save(n news.News) error {
 	tx, err := s.Conn.Begin()
@@ -106,7 +106,7 @@ func (s News) GetById(id string) (*news.News, error) {
 
 	query, args := builder.Build()
 	row := s.Conn.QueryRow(query, args...)
-	post := domain.Posts{}
+	post := domain.Post{}
 	slug := new(domain.Slug)
 	err := row.Scan(&post.ID, &post.Title, &post.Status, &post.Body, slug)
 
@@ -143,7 +143,7 @@ func (s News) GetAll() ([]news.News, error) {
 	newsResults := make([]news.News, 0)
 
 	for newsRows.Next() {
-		post := domain.Posts{}
+		post := domain.Post{}
 		slug := new(domain.Slug)
 		err = newsRows.Scan(&post.ID, &post.Title, &post.Status, &post.Body, slug)
 		if err != nil {
