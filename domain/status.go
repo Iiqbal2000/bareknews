@@ -14,8 +14,12 @@ const (
 // Validate performs validating to the status.
 func (s Status) Validate() error {
 	return validation.Validate(
-		s,
+		s.String(),
 		validation.Required,
-		validation.In(Publish, Draft, Deleted),
+		validation.In(Publish.String(), Draft.String(), Deleted.String()),
 	)
+}
+
+func (s Status) String() string {
+	return string(s)
 }
