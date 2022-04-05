@@ -4,44 +4,41 @@ import (
 	"errors"
 
 	"github.com/Iiqbal2000/bareknews/domain"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/google/uuid"
-	"github.com/go-ozzo/ozzo-validation/v4"
 )
 
 var (
 	ErrInvalidTitle = errors.New("invalid title")
 )
 
-// Agregates
+// News is an aggregate that represents a piece of news.
 type News struct {
-	Post domain.Posts
-	Slug domain.Slug	`json:"slug"`
-	Tags []domain.Tags
+	Post   domain.Post
+	Status domain.Status `json:"status"`
+	Slug   domain.Slug   `json:"slug"`
+	TagsID []uuid.UUID
 }
 
-func New(title, body string, status domain.Status, tags []domain.Tags) *News {
-	post := domain.Posts{
-		ID: uuid.New(),
-		Status: status,
+func New(title, body string, status domain.Status, tags []uuid.UUID) *News {
+	post := domain.Post{
+		ID:    uuid.New(),
 		Title: title,
-		Body: body,
+		Body:  body,
 	}
 
 	return &News{
 		Post: post,
-		Slug: domain.NewSlug(post.Title),
-		Tags: tags,
+		Status: status,
+		Slug:   domain.NewSlug(post.Title),
+		TagsID: tags,
 	}
 }
 
 func (n News) Validate() error {
-	if err := n.Post.Status.Validate(); err != nil {
-		return err
-	}
-	
-	return validation.ValidateStruct(&n, 
-		validation.Field(&n.Post.Title, validation.Required, validation.Length(5, 50)),
-		validation.Field(&n.Post.Body, validation.Required),
+	return validation.ValidateStruct(&n,
+		validation.Field(&n.Post),
+		validation.Field(&n.Status),
 	)
 }
 
@@ -55,13 +52,13 @@ func (n *News) changeSlug() {
 }
 
 func (n *News) ChangeStatus(newStatus domain.Status) {
-	n.Post.Status = newStatus
+	n.Status = newStatus
 }
 
 func (n *News) ChangeBody(newBody string) {
 	n.Post.Body = newBody
 }
 
-func (n *News) ChangeTags(newTags []domain.Tags) {
-	n.Tags = newTags
+func (n *News) ChangeTags(newTags []uuid.UUID) {
+	n.TagsID = newTags
 }
