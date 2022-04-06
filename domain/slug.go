@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Value object
+// Slug is a value object that represents the slug
 type Slug string
 
 func NewSlug(input string) Slug {
@@ -14,4 +14,8 @@ func NewSlug(input string) Slug {
 	fmt.Fprintf(slug, "%s", strings.ToLower(strings.Replace(input, " ", "-", -1)))
 
 	return Slug(slug.String())
+}
+
+func (s Slug) String() string {
+	return string(s)
 }
