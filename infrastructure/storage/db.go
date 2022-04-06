@@ -11,7 +11,7 @@ import (
 var tagsquery = `CREATE TABLE IF NOT EXISTS tags(
 	ID VARCHAR (127) PRIMARY KEY UNIQUE,
 	name VARCHAR (127) NOT NULL UNIQUE,
-	slug VARCHAR (127) NOT NULL
+	slug VARCHAR (127) NOT NULL UNIQUE
 )`
 
 var newsQuery = `CREATE TABLE IF NOT EXISTS news(
@@ -22,7 +22,7 @@ var newsQuery = `CREATE TABLE IF NOT EXISTS news(
 	body TEXT NOT NULL
 )`
 
-var topicsquery = `CREATE TABLE IF NOT EXISTS topics(
+var news_tagsquery = `CREATE TABLE IF NOT EXISTS news_tags(
 	newsID VARCHAR (127) NOT NULL,
 	tagsID VARCHAR (127) NOT NULL,
 	FOREIGN KEY(newsID) REFERENCES news(id) ON DELETE CASCADE,
@@ -57,9 +57,9 @@ func Run(dbpath string, dropTable bool) *sql.DB {
 			log.Fatal("failure when drop news table: ", err.Error())
 		}
 
-		_, err = tx.Exec("DROP TABLE IF EXISTS topics;")
+		_, err = tx.Exec("DROP TABLE IF EXISTS news_tags;")
 		if err != nil {
-			log.Fatal("failure when drop topics table: ", err.Error())
+			log.Fatal("failure when drop news_tags table: ", err.Error())
 		}
 	}
 
@@ -73,9 +73,9 @@ func Run(dbpath string, dropTable bool) *sql.DB {
 		log.Fatal("failure when creating news table: ", err.Error())
 	}
 
-	_, err = tx.Exec(topicsquery)
+	_, err = tx.Exec(news_tagsquery)
 	if err != nil {
-		log.Fatal("failure when creating topics table: ", err.Error())
+		log.Fatal("failure when creating news_tags table: ", err.Error())
 	}
 
 	if err = tx.Commit(); err != nil {
