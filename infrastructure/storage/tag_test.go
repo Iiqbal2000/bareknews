@@ -1,90 +1,95 @@
 package storage
 
 import (
-	"fmt"
+	"database/sql"
 	"testing"
 
-	"github.com/Iiqbal2000/bareknews/domain"
+	"github.com/Iiqbal2000/bareknews/domain/tags"
+	"github.com/matryer/is"
 )
 
 func TestSave(t *testing.T) {
 	conn := Run(dbfile, true)
 	storage := Tag{conn}
-	tag, err := domain.NewTags("tag 1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = storage.Save(*tag)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
+	is := is.New(t)
 
-func TestUpdate(t *testing.T) {
-	conn := Run(dbfile, true)
-	storage := Tag{conn}
-	tag, err := storage.GetById("f83907d-ac88-45de-819c-809445b03d14")
-	if err != nil {
-		t.Fatal(err)
-	}
-	tag.ChangeName("tag 16")
-	err = storage.Update(*tag)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tag := tags.New("tag 1")
+	err := storage.Save(*tag)
+	is.NoErr(err)
+
+	got, err := storage.GetById(tag.Label.ID)
+	is.NoErr(err)
+	is.True(got.Label.ID.String() != "")
+	is.True(got.Label.Name != "")
+	is.True(got.Slug != "")
 }
 
 func TestGetAll(t *testing.T) {
 	conn := Run(dbfile, true)
 	storage := Tag{conn}
-	tag1, _ := domain.NewTags("tag 1")
-	tag2, _ := domain.NewTags("tag 2")
+	is := is.New(t)
+	tag1 := tags.New("tag 1")
+	tag2 := tags.New("tag 2")
 	err := storage.Save(*tag1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 	err = storage.Save(*tag2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	result, err := storage.GetAll()
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	fmt.Println(result)
+	is.NoErr(err)
+
+	got, err := storage.GetAll()
+	is.NoErr(err)
+	is.Equal(got[0].Label.ID, tag1.Label.ID)
+	is.Equal(got[0].Label.Name, tag1.Label.Name)
+	is.Equal(got[0].Slug, tag1.Slug)
+
+	is.Equal(got[1].Label.ID, tag2.Label.ID)
+	is.Equal(got[1].Label.Name, tag2.Label.Name)
+	is.Equal(got[1].Slug, tag2.Slug)
 }
 
-func TestGetAllByNames(t *testing.T) {
+func TestUpdate(t *testing.T) {
 	conn := Run(dbfile, true)
 	storage := Tag{conn}
-	result, err := storage.GetByNames("tag 1", "tag 23")
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	fmt.Println(result)
-}
+	is := is.New(t)
+	tag := tags.New("tag 1")
+	err := storage.Save(*tag)
+	is.NoErr(err)
 
-func TestGetById(t *testing.T) {
-	conn := Run(dbfile, true)
-	storage := Tag{conn}
-	_, err := storage.GetById("50b12s9b6-0497-4b75-8bf9-26b05f4e74c4")
-	if err == nil {
-		t.Fatal(err.Error())
-	}
-	fmt.Println(err)
+	tag.ChangeName("tag 16")
+	err = storage.Update(*tag)
+	is.NoErr(err)
+	is.Equal(tag.Label.Name, "tag 16")
+	is.Equal(tag.Slug.String(), "tag-16")
 }
-
 func TestDelete(t *testing.T) {
 	conn := Run(dbfile, true)
 	storage := Tag{conn}
-	err := storage.Delete("50b12s9b6-0497-4b75-8bf9-26b05f4e74c4")
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	is := is.New(t)
 
-	result, err := storage.GetAll()
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	fmt.Println(result)
+	tag := tags.New("tag 1")
+	err := storage.Save(*tag)
+	is.NoErr(err)
+	err = storage.Delete(tag.Label.ID)
+	is.NoErr(err)
+	_, err = storage.GetById(tag.Label.ID)
+	is.Equal(err, sql.ErrNoRows)
 }
+
+// func TestGetAllByNames(t *testing.T) {
+// 	conn := Run(dbfile, true)
+// 	storage := Tag{conn}
+// 	result, err := storage.GetByNames("tag 1", "tag 23")
+// 	if err != nil {
+// 		t.Fatal(err.Error())
+// 	}
+// 	fmt.Println(result)
+// }
+
+// func TestGetById(t *testing.T) {
+// 	conn := Run(dbfile, true)
+// 	storage := Tag{conn}
+// 	_, err := storage.GetById("50b12s9b6-0497-4b75-8bf9-26b05f4e74c4")
+// 	if err == nil {
+// 		t.Fatal(err.Error())
+// 	}
+// 	fmt.Println(err)
+// }
