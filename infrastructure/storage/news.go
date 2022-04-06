@@ -15,8 +15,6 @@ type News struct {
 	Conn *sql.DB
 }
 
-var post = sqlbuilder.NewStruct(new(domain.Post))
-
 func (s News) Save(n news.News) error {
 	tx, err := s.Conn.Begin()
 	if err != nil {
@@ -32,7 +30,7 @@ func (s News) Save(n news.News) error {
 		n.Post.ID,
 		n.Post.Title,
 		n.Slug,
-		n.Post.Status,
+		n.Status,
 		n.Post.Body,
 	)
 	query, args := builder.Build()
@@ -54,6 +52,40 @@ func (s News) Save(n news.News) error {
 	return nil
 }
 
+func (s News) GetById(id uuid.UUID) (*news.News, error) {
+	builder := sqlbuilder.NewSelectBuilder()
+	builder.Select("id", "title", "status", "body", "slug")
+	builder.From("news")
+	builder.Where(builder.Equal("id", id))
+
+	query, args := builder.Build()
+	row := s.Conn.QueryRow(query, args...)
+	post := domain.Post{}
+	slug := new(domain.Slug)
+	status := new(domain.Status)
+	err := row.Scan(&post.ID, &post.Title, status, &post.Body, slug)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &news.News{}, sql.ErrNoRows
+		} else {
+			return &news.News{}, fmt.Errorf("failure when querying news: %s", err.Error())
+		}
+	}
+	
+	tagsResult, err := s.getTags(post.ID)
+	if err != nil {
+		return &news.News{}, err
+	}
+
+	result := &news.News{
+		Post: post, 
+		Slug: *slug, 
+		Status: *status,
+		TagsID: tagsResult,
+	}
+	return result, nil
+}
+
 func (s News) Update(n news.News) error {
 	tx, err := s.Conn.Begin()
 	if err != nil {
@@ -67,102 +99,34 @@ func (s News) Update(n news.News) error {
 	builder.Set(
 		builder.Assign("title", n.Post.Title),
 		builder.Assign("body", n.Post.Body),
-		builder.Assign("status", n.Post.Status),
+		builder.Assign("status", n.Status),
 		builder.Assign("slug", n.Slug),
 	)
 	builder.Where(builder.Equal("id", n.Post.ID))
 	query, args := builder.Build()
 	_, err = tx.Exec(query, args...)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("not found")
-		} else {
-			return fmt.Errorf("failure when updating a tag: %s", err.Error())
-		}
+		return fmt.Errorf("failure when updating a tag: %s", err.Error())
 	}
 
+	// deleting relation between news and tags.
 	err = s.deleteTags(tx, n.Post.ID)
 	if err != nil {
 		return err
 	}
 
+	// inserting new relation between news and tags if they
+	// exist.
 	err = s.insertTags(tx, n)
 	if err != nil {
 		return err
 	}
 
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("faiure when commiting in updating news item")
+		return fmt.Errorf("faiure when commit in updating news item")
 	}
 
 	return nil
-}
-
-func (s News) GetById(id string) (*news.News, error) {
-	builder := sqlbuilder.NewSelectBuilder()
-	builder.Select("id", "title", "status", "body", "slug")
-	builder.From("news")
-	builder.Where(builder.Equal("id", id))
-
-	query, args := builder.Build()
-	row := s.Conn.QueryRow(query, args...)
-	post := domain.Post{}
-	slug := new(domain.Slug)
-	err := row.Scan(&post.ID, &post.Title, &post.Status, &post.Body, slug)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return &news.News{}, fmt.Errorf("news is not found")
-		} else {
-			return &news.News{}, fmt.Errorf("failure when querying news: %s", err.Error())
-		}
-	}
-
-	result := &news.News{Post: post, Slug: *slug}
-	tagsResult, err := s.getTags(result.Post.ID)
-	if err != nil {
-		return &news.News{}, err
-	}
-
-	result.Tags = tagsResult
-	return result, nil
-}
-
-func (s News) GetAll() ([]news.News, error) {
-	builder := sqlbuilder.NewSelectBuilder()
-	builder.Select("id", "title", "status", "body", "slug")
-	builder.From("news")
-	query, args := builder.Build()
-	newsRows, err := s.Conn.Query(query, args...)
-	if err != nil {
-		return []news.News{}, fmt.Errorf("(GetAll news operation) failure when querying news: %s", err.Error())
-	}
-
-	defer newsRows.Close()
-
-	newsResults := make([]news.News, 0)
-
-	for newsRows.Next() {
-		post := domain.Post{}
-		slug := new(domain.Slug)
-		err = newsRows.Scan(&post.ID, &post.Title, &post.Status, &post.Body, slug)
-		if err != nil {
-			return []news.News{}, fmt.Errorf("(GetAll news operation) failure when querying news in iteration: %s", err.Error())
-		}
-		tagsResult, err := s.getTags(post.ID)
-		if err != nil {
-			return []news.News{}, err
-		}
-		newsResults = append(newsResults, news.News{
-			Post: post,
-			Slug: *slug,
-			Tags: tagsResult,
-		})
-	}
-
-	fmt.Println(newsResults)
-
-	return newsResults, nil
 }
 
 func (s News) Delete(id uuid.UUID) error {
@@ -193,12 +157,49 @@ func (s News) Delete(id uuid.UUID) error {
 	return nil
 }
 
+func (s News) GetAll() ([]news.News, error) {
+	builder := sqlbuilder.NewSelectBuilder()
+	builder.Select("id", "title", "status", "body", "slug")
+	builder.From("news")
+	query, args := builder.Build()
+	newsRows, err := s.Conn.Query(query, args...)
+	if err != nil {
+		return []news.News{}, fmt.Errorf("(GetAll news operation) failure when querying news: %s", err.Error())
+	}
+
+	defer newsRows.Close()
+
+	newsResults := make([]news.News, 0)
+
+	for newsRows.Next() {
+		post := domain.Post{}
+		slug := new(domain.Slug)
+		status := new(domain.Status)
+		err = newsRows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
+		if err != nil {
+			return []news.News{}, fmt.Errorf("(GetAll news operation) failure when querying news in iteration: %s", err.Error())
+		}
+		tagsResult, err := s.getTags(post.ID)
+		if err != nil {
+			return []news.News{}, err
+		}
+		newsResults = append(newsResults, news.News{
+			Post:   post,
+			Status: *status,
+			Slug:   *slug,
+			TagsID: tagsResult,
+		})
+	}
+
+	return newsResults, nil
+}
+
 func (s News) insertTags(tx *sql.Tx, n news.News) error {
-	for i := range n.Tags {
+	for i := range n.TagsID {
 		builder := sqlbuilder.NewInsertBuilder()
-		builder.InsertInto("topics")
+		builder.InsertInto("news_tags")
 		builder.Cols("newsID", "tagsID")
-		builder.Values(n.Post.ID, n.Tags[i].ID)
+		builder.Values(n.Post.ID, n.TagsID[i])
 		query, args := builder.Build()
 
 		_, err := tx.Exec(query, args...)
@@ -212,45 +213,41 @@ func (s News) insertTags(tx *sql.Tx, n news.News) error {
 
 func (s News) deleteTags(tx *sql.Tx, id uuid.UUID) error {
 	builderDel := sqlbuilder.NewDeleteBuilder()
-	builderDel.DeleteFrom("topics")
+	builderDel.DeleteFrom("news_tags")
 	builderDel.Where(builderDel.Equal("newsID", id))
 	query, args := builderDel.Build()
+
 	_, err := tx.Exec(query, args...)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("not found")
-		} else {
-			return fmt.Errorf("failure when deleting tags: %s", err.Error())
-		}
+		return fmt.Errorf("failure when deleting tags: %s", err.Error())
 	}
 
 	return nil
 }
 
-func (s News) getTags(newsId uuid.UUID) ([]domain.Tags, error) {
+func (s News) getTags(newsId uuid.UUID) ([]uuid.UUID, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Distinct()
-	builder.Select("tags.ID", "tags.name", "tags.slug")
-	builder.From("news")
-	builder.Join("topics", builder.Equal("topics.newsID", newsId))
-	builder.Join("tags", "tags.ID = topics.tagsID")
+	builder.Select("tagsID")
+	builder.From("news_tags")
+	builder.Where(builder.Equal("newsID", newsId))
 	query, args := builder.Build()
 	rows, err := s.Conn.Query(query, args...)
 	if err != nil {
-		return []domain.Tags{}, fmt.Errorf("failure when querying tags in news: %s", err.Error())
+		return []uuid.UUID{}, fmt.Errorf("failure when querying tags in news: %s", err.Error())
 	}
 
 	defer rows.Close()
 
-	tagsResult := make([]domain.Tags, 0)
+	tagsResult := make([]uuid.UUID, 0)
 
 	for rows.Next() {
-		t := domain.Tags{}
-		err = rows.Scan(tags.Addr(&t)...)
+		tagId := uuid.UUID{}
+		err = rows.Scan(&tagId)
 		if err != nil {
-			return []domain.Tags{}, fmt.Errorf("failure when querying tags in the news iteration: %s", err.Error())
+			return []uuid.UUID{}, fmt.Errorf("failure when querying tags in the news iteration: %s", err.Error())
 		}
-		tagsResult = append(tagsResult, t)
+		tagsResult = append(tagsResult, tagId)
 	}
 
 	return tagsResult, nil
