@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Label is an entity that represents the label
 type Label struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
