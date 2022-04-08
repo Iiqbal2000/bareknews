@@ -9,7 +9,7 @@ type Repository interface {
 	Delete(id uuid.UUID) error
 	GetById(id uuid.UUID) (*Tags, error)
 	GetAll() ([]Tags, error)
-	// GetByNewsId(id string) ([]Tags, error)
-	// GetByName(names string) (Tags, error)
-	// GetByNames(names ...string) ([]Tags, error)
+	Count(id uuid.UUID) (int, error)
+	GetByNames(names ...string) ([]Tags, error)
+	GetByIds(ids []uuid.UUID) ([]Tags, error)
 }

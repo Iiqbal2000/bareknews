@@ -1,96 +1,170 @@
 package tagging
 
-import "github.com/Iiqbal2000/bareknews/domain/tags"
+import (
+	"database/sql"
+	"errors"
+
+	"github.com/Iiqbal2000/bareknews/domain/tags"
+	"github.com/Iiqbal2000/bareknews/services"
+	"github.com/google/uuid"
+)
+
+type Response struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Slug string    `json:"slug"`
+}
 
 type Service struct {
 	storage tags.Repository
 }
 
-// func New(repo tag.Repository) Service {
-// 	return Service{repo}
-// }
+func New(repo tags.Repository) Service {
+	return Service{repo}
+}
 
-// func (s Service) Create(tagName string) (domain.Tags, error) {
-// 	tag, err := domain.NewTags(tagName)
-// 	if err != nil {
-// 		return domain.Tags{}, err
-// 	}
+func (s Service) Create(tagName string) (Response, error) {
+	tag := tags.New(tagName)
 
-// 	err = tag.Validate()
-// 	if err != nil {
-// 		return domain.Tags{}, err
-// 	}
+	err := tag.Validate()
+	if err != nil {
+		return Response{}, err
+	}
 
-// 	err = s.storage.Save(*tag)
-// 	if err != nil {
-// 		return domain.Tags{}, err
-// 	}
+	err = s.storage.Save(*tag)
+	if err != nil {
+		return Response{}, services.ErrInternalServer
+	}
 
-// 	t, err := s.storage.GetByName(tagName)
-// 	if err != nil {
-// 		return domain.Tags{}, err
-// 	}
+	t, err := s.storage.GetById(tag.Label.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Response{}, err
+		} else {
+			return Response{}, services.ErrInternalServer
+		}
+	}
 
-// 	return t, nil
-// }
+	return Response{
+		ID:   t.Label.ID,
+		Name: t.Label.Name,
+		Slug: t.Slug.String(),
+	}, nil
+}
 
-// func (s Service) Update(id, newTagname string) error {
-// 	tag, err := s.storage.GetById(id)
-// 	if err != nil {
-// 		return err
-// 	}
+func (s Service) Update(id uuid.UUID, newTagname string) error {
+	tag, err := s.storage.GetById(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return err
+		} else {
+			return services.ErrInternalServer
+		}
+	}
 
-// 	tag.ChangeName(newTagname)
+	tag.ChangeName(newTagname)
 
-// 	err = tag.Validate()
-// 	if err != nil {
-// 		return err
-// 	}
+	err = tag.Validate()
+	if err != nil {
+		return err
+	}
 
-// 	err = s.storage.Update(*tag)
-// 	if err != nil {
-// 		return err
-// 	}
+	err = s.storage.Update(*tag)
+	if err != nil {
+		return services.ErrInternalServer
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
-// func (s Service) Delete(id string) error {
-// 	_, err := s.storage.GetById(id)
-// 	if err != nil {
-// 		return err
-// 	}
+func (s Service) Delete(id uuid.UUID) error {
+	_, err := s.storage.Count(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return err
+		} else {
+			return services.ErrInternalServer
+		}
+	}
 
-// 	err = s.storage.Delete(id)
-// 	if err != nil {
-// 		return err
-// 	}
+	err = s.storage.Delete(id)
+	if err != nil {
+		return services.ErrInternalServer
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
-// func (s Service) GetById(id string) (domain.Tags, error) {
-// 	tagsResult, err := s.storage.GetById(id)
-// 	if err != nil {
-// 		return domain.Tags{}, err
-// 	}
+func (s Service) GetById(id uuid.UUID) (Response, error) {
+	tg, err := s.storage.GetById(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Response{}, err
+		} else {
+			return Response{}, services.ErrInternalServer
+		}
+	}
 
-// 	return *tagsResult, nil
-// }
+	return Response{
+		ID:   tg.Label.ID,
+		Name: tg.Label.Name,
+		Slug: tg.Slug.String(),
+	}, nil
+}
 
-// func (s Service) GetAll() ([]domain.Tags, error) {
-// 	tagsResults, err := s.storage.GetAll()
-// 	if err != nil {
-// 		return []domain.Tags{}, err
-// 	}
+func (s Service) GetByIds(ids []uuid.UUID) ([]Response, error) {
+	tgs, err := s.storage.GetByIds(ids)
+	if err != nil {
+		return []Response{}, services.ErrInternalServer
+	}
 
-// 	return tagsResults, nil
-// }
+	r := make([]Response, 0)
 
-// func (s Service) GetByNames(tagsIn []string) []domain.Tags {
-// 	tags, err := s.storage.GetByNames(tagsIn...)
-// 	if err != nil {
-// 		log.Println("Error in tagging service: ", err.Error())
-// 	}
-// 	return tags
-// }
+	for _, t := range tgs {
+		r = append(r, Response{
+			ID:   t.Label.ID,
+			Name: t.Label.Name,
+			Slug: t.Slug.String(),
+		})
+	}
+
+	return r, nil
+}
+
+func (s Service) GetAll() ([]Response, error) {
+	tg, err := s.storage.GetAll()
+	if err != nil {
+		return []Response{}, services.ErrInternalServer
+	}
+
+	r := make([]Response, 0)
+
+	for _, t := range tg {
+		r = append(r, Response{
+			ID:   t.Label.ID,
+			Name: t.Label.Name,
+			Slug: t.Slug.String(),
+		})
+	}
+
+	return r, nil
+}
+
+func (s Service) GetByNames(tagsIn []string) []Response {
+	tg, err := s.storage.GetByNames(tagsIn...)
+	if err != nil {
+		return []Response{}
+	}
+
+	r := make([]Response, 0)
+
+	for _, t := range tg {
+		r = append(r, Response{
+			ID:   t.Label.ID,
+			Name: t.Label.Name,
+			Slug: t.Slug.String(),
+		})
+	}
+
+	return r
+}
