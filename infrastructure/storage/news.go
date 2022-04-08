@@ -2,13 +2,12 @@ package storage
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
 
 	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/news"
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/pkg/errors"
 )
 
 type News struct {
@@ -18,7 +17,7 @@ type News struct {
 func (s News) Save(n news.News) error {
 	tx, err := s.Conn.Begin()
 	if err != nil {
-		return fmt.Errorf("failure when starting transaction: %s", err.Error())
+		return errors.Wrap(err, "storage.news.save")
 	}
 
 	defer tx.Rollback()
@@ -37,7 +36,7 @@ func (s News) Save(n news.News) error {
 
 	_, err = tx.Exec(query, args...)
 	if err != nil {
-		return fmt.Errorf("failure when inserting a news: %s", err.Error())
+		return errors.Wrap(err, "storage.news.save")
 	}
 
 	err = s.insertTags(tx, n)
@@ -46,7 +45,7 @@ func (s News) Save(n news.News) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("faiure commiting in news table")
+		return errors.Wrap(err, "storage.news.save")
 	}
 
 	return nil
@@ -68,18 +67,18 @@ func (s News) GetById(id uuid.UUID) (*news.News, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &news.News{}, sql.ErrNoRows
 		} else {
-			return &news.News{}, fmt.Errorf("failure when querying news: %s", err.Error())
+			return &news.News{}, errors.Wrap(err, "storage.news.getById")
 		}
 	}
-	
+
 	tagsResult, err := s.getTags(post.ID)
 	if err != nil {
 		return &news.News{}, err
 	}
 
 	result := &news.News{
-		Post: post, 
-		Slug: *slug, 
+		Post:   post,
+		Slug:   *slug,
 		Status: *status,
 		TagsID: tagsResult,
 	}
@@ -89,7 +88,7 @@ func (s News) GetById(id uuid.UUID) (*news.News, error) {
 func (s News) Update(n news.News) error {
 	tx, err := s.Conn.Begin()
 	if err != nil {
-		return fmt.Errorf("failure when starting transaction in updating a news: %s", err.Error())
+		return errors.Wrap(err, "storage.news.update")
 	}
 
 	defer tx.Rollback()
@@ -106,7 +105,7 @@ func (s News) Update(n news.News) error {
 	query, args := builder.Build()
 	_, err = tx.Exec(query, args...)
 	if err != nil {
-		return fmt.Errorf("failure when updating a tag: %s", err.Error())
+		return errors.Wrap(err, "storage.news.update")
 	}
 
 	// deleting relation between news and tags.
@@ -123,7 +122,7 @@ func (s News) Update(n news.News) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("faiure when commit in updating news item")
+		return errors.Wrap(err, "storage.news.update")
 	}
 
 	return nil
@@ -132,7 +131,7 @@ func (s News) Update(n news.News) error {
 func (s News) Delete(id uuid.UUID) error {
 	tx, err := s.Conn.Begin()
 	if err != nil {
-		return fmt.Errorf("(news deleting operation) failure when starting the transaction: %s", err.Error())
+		return errors.Wrap(err, "storage.news.delete")
 	}
 
 	defer tx.Rollback()
@@ -148,13 +147,34 @@ func (s News) Delete(id uuid.UUID) error {
 	sql, args := d.Build()
 	_, err = tx.Exec(sql, args...)
 	if err != nil {
-		return fmt.Errorf("(news deleting operation) failure when deleting a news: %s", err.Error())
+		return errors.Wrap(err, "storage.news.delete")
 	}
 
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("(news deleting operation) faiure when committing in updating news item")
+		return errors.Wrap(err, "storage.news.delete")
 	}
 	return nil
+}
+
+func (s News) Count(id uuid.UUID) (int, error) {
+	builder := sqlbuilder.NewSelectBuilder()
+	builder.Select(builder.As("COUNT(id)", "c"))
+	builder.From("news")
+	builder.Where(builder.Equal("id", id))
+	query, args := builder.Build()
+	row := s.Conn.QueryRow(query, args...)
+	
+	var c int
+	err := row.Scan(&c)
+	if err != nil {
+		return c, errors.Wrap(err, "storage.news.count")
+	}
+
+	if c == 0 {
+		return c, sql.ErrNoRows
+	}
+
+	return c, nil
 }
 
 func (s News) GetAll() ([]news.News, error) {
@@ -162,22 +182,22 @@ func (s News) GetAll() ([]news.News, error) {
 	builder.Select("id", "title", "status", "body", "slug")
 	builder.From("news")
 	query, args := builder.Build()
-	newsRows, err := s.Conn.Query(query, args...)
+	rows, err := s.Conn.Query(query, args...)
 	if err != nil {
-		return []news.News{}, fmt.Errorf("(GetAll news operation) failure when querying news: %s", err.Error())
+		return []news.News{}, errors.Wrap(err, "storage.news.getAll")
 	}
 
-	defer newsRows.Close()
+	defer rows.Close()
 
 	newsResults := make([]news.News, 0)
 
-	for newsRows.Next() {
+	for rows.Next() {
 		post := domain.Post{}
 		slug := new(domain.Slug)
 		status := new(domain.Status)
-		err = newsRows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
+		err = rows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
 		if err != nil {
-			return []news.News{}, fmt.Errorf("(GetAll news operation) failure when querying news in iteration: %s", err.Error())
+			return []news.News{}, errors.Wrap(err, "storage.news.getAll")
 		}
 		tagsResult, err := s.getTags(post.ID)
 		if err != nil {
@@ -189,6 +209,10 @@ func (s News) GetAll() ([]news.News, error) {
 			Slug:   *slug,
 			TagsID: tagsResult,
 		})
+	}
+
+	if rows.Err() != nil {
+		return []news.News{}, errors.Wrap(err, "storage.news.getAll")
 	}
 
 	return newsResults, nil
@@ -204,7 +228,7 @@ func (s News) insertTags(tx *sql.Tx, n news.News) error {
 
 		_, err := tx.Exec(query, args...)
 		if err != nil {
-			return fmt.Errorf("failure when inserting tags: %s", err.Error())
+			return errors.Wrap(err, "storage.news.insertTagsReference")
 		}
 	}
 
@@ -219,7 +243,7 @@ func (s News) deleteTags(tx *sql.Tx, id uuid.UUID) error {
 
 	_, err := tx.Exec(query, args...)
 	if err != nil {
-		return fmt.Errorf("failure when deleting tags: %s", err.Error())
+		return errors.Wrap(err, "storage.news.deleteTagsReference")
 	}
 
 	return nil
@@ -234,7 +258,7 @@ func (s News) getTags(newsId uuid.UUID) ([]uuid.UUID, error) {
 	query, args := builder.Build()
 	rows, err := s.Conn.Query(query, args...)
 	if err != nil {
-		return []uuid.UUID{}, fmt.Errorf("failure when querying tags in news: %s", err.Error())
+		return []uuid.UUID{}, errors.Wrap(err, "storage.news.getTagsReference")
 	}
 
 	defer rows.Close()
@@ -245,9 +269,13 @@ func (s News) getTags(newsId uuid.UUID) ([]uuid.UUID, error) {
 		tagId := uuid.UUID{}
 		err = rows.Scan(&tagId)
 		if err != nil {
-			return []uuid.UUID{}, fmt.Errorf("failure when querying tags in the news iteration: %s", err.Error())
+			return []uuid.UUID{}, errors.Wrap(err, "storage.news.getTagsReference")
 		}
 		tagsResult = append(tagsResult, tagId)
+	}
+
+	if rows.Err() != nil {
+		return []uuid.UUID{}, errors.Wrap(err, "storage.news.getTags")
 	}
 
 	return tagsResult, nil

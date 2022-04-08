@@ -7,7 +7,7 @@ type Repository interface {
 	Save(News) error
 	GetAll() ([]News, error)
 	GetById(id uuid.UUID) (*News, error)
-	// GetByTopic(string) error
+	Count(id uuid.UUID) (int, error)
 	Update(News) error
 	Delete(uuid.UUID) error
 }
