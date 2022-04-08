@@ -10,6 +10,7 @@ require (
 	github.com/huandu/go-sqlbuilder v1.13.0
 	github.com/matryer/is v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.12
+	github.com/pkg/errors v0.9.1
 )
 
 require (
