@@ -7,7 +7,7 @@ import (
 
 	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/news"
-	"github.com/Iiqbal2000/bareknews/services"
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/services/tagging"
 	"github.com/google/uuid"
 )
@@ -47,7 +47,7 @@ func (s Service) Create(title, body, status string, tagsIn []string) error {
 
 	err = s.storage.Save(*news)
 	if err != nil {
-		return services.ErrInternalServer
+		return bareknews.ErrInternalServer
 	}
 
 	return nil
@@ -59,7 +59,7 @@ func (s Service) Update(id uuid.UUID, title, body, status string, tgIn []string)
 		if errors.Is(err, sql.ErrNoRows) {
 			return err
 		} else {
-			return services.ErrInternalServer
+			return bareknews.ErrInternalServer
 		}
 	}
 
@@ -92,7 +92,7 @@ func (s Service) Update(id uuid.UUID, title, body, status string, tgIn []string)
 
 	err = s.storage.Update(*news)
 	if err != nil {
-		return services.ErrInternalServer
+		return bareknews.ErrInternalServer
 	}
 
 	return nil
@@ -104,13 +104,13 @@ func (s Service) Delete(id uuid.UUID) error {
 		if errors.Is(err, sql.ErrNoRows) {
 			return err
 		} else {
-			return services.ErrInternalServer
+			return bareknews.ErrInternalServer
 		}
 	}
 
 	err = s.storage.Delete(id)
 	if err != nil {
-		return services.ErrInternalServer
+		return bareknews.ErrInternalServer
 	}
 
 	return nil
@@ -122,7 +122,7 @@ func (s Service) GetById(id uuid.UUID) (Response, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, err
 		} else {
-			return Response{}, services.ErrInternalServer
+			return Response{}, bareknews.ErrInternalServer
 		}
 	}
 
@@ -146,7 +146,7 @@ func (s Service) GetById(id uuid.UUID) (Response, error) {
 func (s Service) GetAll() ([]Response, error) {
 	nws, err := s.storage.GetAll()
 	if err != nil {
-		return []Response{}, services.ErrInternalServer
+		return []Response{}, bareknews.ErrInternalServer
 	}
 
 	r := make([]Response, 0)
