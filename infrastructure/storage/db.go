@@ -81,6 +81,6 @@ func Run(dbpath string, dropTable bool) *sql.DB {
 	if err = tx.Commit(); err != nil {
 		log.Fatal("faiure commiting")
 	}
-	log.Println("successfully connected to database")
+	log.Println("Successfully connected to database")
 	return db
 }
