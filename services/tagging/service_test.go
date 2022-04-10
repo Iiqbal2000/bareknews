@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"testing"
 
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/domain/tags"
 	"github.com/Iiqbal2000/bareknews/services/tagging"
 	"github.com/google/uuid"
@@ -81,10 +82,12 @@ func TestUpdate(t *testing.T) {
 		}
 
 		svc := tagging.New(store)
-		err := svc.Update(tg.Label.ID, "tag 2")
+		name := "tag 2"
+		got, err := svc.Update(tg.Label.ID, name)
 		is := is.New(t)
 		is.Equal(err, nil)
 		is.Equal(len(store.UpdateCalls()), 1)
+		is.Equal(got.Name, name)
 	})
 
 	t.Run("invalid payload: the tags is not found", func(t *testing.T) {
@@ -98,9 +101,9 @@ func TestUpdate(t *testing.T) {
 		}
 
 		svc := tagging.New(store)
-		err := svc.Update(uuid.New(), "tag 2")
+		_, err := svc.Update(uuid.New(), "tag 2")
 		is := is.New(t)
-		is.Equal(err, sql.ErrNoRows)
+		is.Equal(err, bareknews.ErrDataNotFound)
 		is.Equal(len(store.UpdateCalls()), 0)
 	})
 }

@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/Iiqbal2000/bareknews/domain/tags"
-	"github.com/Iiqbal2000/bareknews/services"
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/google/uuid"
 )
 
@@ -33,32 +33,26 @@ func (s Service) Create(tagName string) (Response, error) {
 
 	err = s.storage.Save(*tag)
 	if err != nil {
-		return Response{}, services.ErrInternalServer
-	}
-
-	t, err := s.storage.GetById(tag.Label.ID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return Response{}, err
-		} else {
-			return Response{}, services.ErrInternalServer
+		if err.Error() == bareknews.ErrDataAlreadyExist.Error() {
+			return Response{}, bareknews.ErrDataAlreadyExist
 		}
+		return Response{}, bareknews.ErrInternalServer
 	}
 
 	return Response{
-		ID:   t.Label.ID,
-		Name: t.Label.Name,
-		Slug: t.Slug.String(),
+		ID:   tag.Label.ID,
+		Name: tag.Label.Name,
+		Slug: tag.Slug.String(),
 	}, nil
 }
 
-func (s Service) Update(id uuid.UUID, newTagname string) error {
+func (s Service) Update(id uuid.UUID, newTagname string) (Response, error) {
 	tag, err := s.storage.GetById(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return err
+			return Response{}, bareknews.ErrDataNotFound
 		} else {
-			return services.ErrInternalServer
+			return Response{}, bareknews.ErrInternalServer
 		}
 	}
 
@@ -66,30 +60,34 @@ func (s Service) Update(id uuid.UUID, newTagname string) error {
 
 	err = tag.Validate()
 	if err != nil {
-		return err
+		return Response{}, err
 	}
 
 	err = s.storage.Update(*tag)
 	if err != nil {
-		return services.ErrInternalServer
+		return Response{}, bareknews.ErrInternalServer
 	}
 
-	return nil
+	return Response{
+		ID: tag.Label.ID,
+		Name: tag.Label.Name,
+		Slug: tag.Slug.String(),
+	}, nil
 }
 
 func (s Service) Delete(id uuid.UUID) error {
 	_, err := s.storage.Count(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return err
+			return bareknews.ErrDataNotFound
 		} else {
-			return services.ErrInternalServer
+			return bareknews.ErrInternalServer
 		}
 	}
 
 	err = s.storage.Delete(id)
 	if err != nil {
-		return services.ErrInternalServer
+		return bareknews.ErrInternalServer
 	}
 
 	return nil
@@ -99,9 +97,9 @@ func (s Service) GetById(id uuid.UUID) (Response, error) {
 	tg, err := s.storage.GetById(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return Response{}, err
+			return Response{}, bareknews.ErrDataNotFound
 		} else {
-			return Response{}, services.ErrInternalServer
+			return Response{}, bareknews.ErrInternalServer
 		}
 	}
 
@@ -115,7 +113,7 @@ func (s Service) GetById(id uuid.UUID) (Response, error) {
 func (s Service) GetByIds(ids []uuid.UUID) ([]Response, error) {
 	tgs, err := s.storage.GetByIds(ids)
 	if err != nil {
-		return []Response{}, services.ErrInternalServer
+		return []Response{}, bareknews.ErrInternalServer
 	}
 
 	r := make([]Response, 0)
@@ -134,7 +132,7 @@ func (s Service) GetByIds(ids []uuid.UUID) ([]Response, error) {
 func (s Service) GetAll() ([]Response, error) {
 	tg, err := s.storage.GetAll()
 	if err != nil {
-		return []Response{}, services.ErrInternalServer
+		return []Response{}, bareknews.ErrInternalServer
 	}
 
 	r := make([]Response, 0)
