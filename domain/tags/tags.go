@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/Iiqbal2000/bareknews/domain"
-	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/google/uuid"
 )
 
@@ -15,7 +14,7 @@ var (
 // Agregates
 type Tags struct {
 	Label domain.Label
-	Slug  domain.Slug `json:"slug"`
+	Slug  domain.Slug
 }
 
 func New(tagName string) *Tags {
@@ -36,7 +35,5 @@ func (t *Tags) ChangeName(newName string) {
 }
 
 func (t Tags) Validate() error {
-	return validation.ValidateStruct(&t,
-		validation.Field(&t.Label),
-	)
+	return t.Label.Validate()
 }
