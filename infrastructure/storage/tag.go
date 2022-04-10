@@ -2,9 +2,11 @@ package storage
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/tags"
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/pkg/errors"
@@ -22,6 +24,10 @@ func (t Tag) Save(tag tags.Tags) error {
 
 	_, err := t.Conn.Exec(query, args...)
 	if err != nil {
+		if strings.Contains(err.Error(), bareknews.SubStrUniqueConstraint) {
+			return bareknews.ErrDataAlreadyExist
+		}
+
 		return errors.Wrap(err, "storage.tags.save")
 	}
 
