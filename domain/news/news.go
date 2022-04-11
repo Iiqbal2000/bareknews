@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/Iiqbal2000/bareknews/domain"
-	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/google/uuid"
 )
 
@@ -28,7 +27,7 @@ func New(title, body string, status domain.Status, tags []uuid.UUID) *News {
 	}
 
 	return &News{
-		Post: post,
+		Post:   post,
 		Status: status,
 		Slug:   domain.NewSlug(post.Title),
 		TagsID: tags,
@@ -36,10 +35,15 @@ func New(title, body string, status domain.Status, tags []uuid.UUID) *News {
 }
 
 func (n News) Validate() error {
-	return validation.ValidateStruct(&n,
-		validation.Field(&n.Post),
-		validation.Field(&n.Status),
-	)
+	if err := n.Post.Validate(); err != nil {
+		return err
+	}
+
+	if err := n.Status.Validate(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (n *News) ChangeTitle(newTitle string) {

@@ -15,8 +15,12 @@ const (
 func (s Status) Validate() error {
 	return validation.Validate(
 		s.String(),
-		validation.Required,
-		validation.In(Publish.String(), Draft.String(), Deleted.String()),
+		validation.Required.Error("status cannot be blank"),
+		validation.In(
+			Publish.String(), 
+			Draft.String(), 
+			Deleted.String(),
+			).Error("status must be one of 'publish', 'draft', 'deleted'"),
 	)
 }
 
