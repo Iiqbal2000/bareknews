@@ -29,7 +29,7 @@ func TestCreate(t *testing.T) {
 		is := is.New(t)
 
 		svc := posting.New(store, tagging.New(tgStore))
-		err := svc.Create("news title", "news body", "draft", []string{"tag1"})
+		_, err := svc.Create("news title", "news body", "draft", []string{"tag1"})
 		is.NoErr(err)
 		is.Equal(len(store.SaveCalls()), 1)
 		is.Equal(len(tgStore.GetByNamesCalls()), 1)
@@ -51,7 +51,7 @@ func TestCreate(t *testing.T) {
 		is := is.New(t)
 
 		svc := posting.New(store, tagging.New(tgStore))
-		err := svc.Create("", "news body", "draft", []string{"tag1"})
+		_, err := svc.Create("", "news body", "draft", []string{"tag1"})
 		is.True(err != nil)
 		is.Equal(len(store.SaveCalls()), 0)
 		is.Equal(len(tgStore.GetByNamesCalls()), 1)
@@ -73,7 +73,7 @@ func TestCreate(t *testing.T) {
 		is := is.New(t)
 
 		svc := posting.New(store, tagging.New(tgStore))
-		err := svc.Create("news title", "news body", "draftler", []string{"tag1"})
+		_, err := svc.Create("news title", "news body", "draftler", []string{"tag1"})
 		is.True(err != nil)
 		is.Equal(len(store.SaveCalls()), 0)
 		is.Equal(len(tgStore.GetByNamesCalls()), 1)
@@ -96,12 +96,15 @@ func TestUpdate(t *testing.T) {
 		GetByNamesFunc: func(names ...string) ([]tags.Tags, error) {
 			return nil, nil
 		},
+		GetByIdsFunc: func(ids []uuid.UUID) ([]tags.Tags, error) {
+			return nil, nil
+		},
 	}
 
 	is := is.New(t)
 
 	svc := posting.New(store, tagging.New(tgStore))
-	err := svc.Update(payload.Post.ID, "news title update", "", "", []string{})
+	_, err := svc.Update(payload.Post.ID, "news title update", "", "", []string{})
 	is.NoErr(err)
 	is.Equal(len(store.GetByIdCalls()), 1)
 	is.Equal(len(store.UpdateCalls()), 1)
