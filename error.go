@@ -2,6 +2,7 @@ package bareknews
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -20,6 +21,11 @@ var ErrDataNotFound = validation.NewError(
 	"the data not found",
 )
 
+var ErrInvalidJSON = validation.NewError(
+	"invalid_json",
+	"the syntax JSON is invalid",
+)
+
 const SubStrUniqueConstraint = "UNIQUE constraint failed:"
 
 func WriteErrResponse(w http.ResponseWriter, err error) error {
@@ -31,6 +37,8 @@ func WriteErrResponse(w http.ResponseWriter, err error) error {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	default:
+		log.Println(err.Error())
+		err = ErrInternalServer
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
