@@ -2,7 +2,9 @@ package storage
 
 import (
 	"database/sql"
+	"strings"
 
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/news"
 	"github.com/google/uuid"
@@ -36,6 +38,9 @@ func (s News) Save(n news.News) error {
 
 	_, err = tx.Exec(query, args...)
 	if err != nil {
+		if strings.Contains(err.Error(), bareknews.SubStrUniqueConstraint) {
+			return bareknews.ErrDataAlreadyExist
+		}
 		return errors.Wrap(err, "storage.news.save")
 	}
 
@@ -163,7 +168,7 @@ func (s News) Count(id uuid.UUID) (int, error) {
 	builder.Where(builder.Equal("id", id))
 	query, args := builder.Build()
 	row := s.Conn.QueryRow(query, args...)
-	
+
 	var c int
 	err := row.Scan(&c)
 	if err != nil {
