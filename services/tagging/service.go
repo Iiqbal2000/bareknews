@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/Iiqbal2000/bareknews/domain/tags"
 	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/domain/tags"
 	"github.com/google/uuid"
 )
 
@@ -36,7 +36,7 @@ func (s Service) Create(tagName string) (Response, error) {
 		if err.Error() == bareknews.ErrDataAlreadyExist.Error() {
 			return Response{}, bareknews.ErrDataAlreadyExist
 		}
-		return Response{}, bareknews.ErrInternalServer
+		return Response{}, err
 	}
 
 	return Response{
@@ -52,7 +52,7 @@ func (s Service) Update(id uuid.UUID, newTagname string) (Response, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
 		} else {
-			return Response{}, bareknews.ErrInternalServer
+			return Response{}, err
 		}
 	}
 
@@ -65,11 +65,11 @@ func (s Service) Update(id uuid.UUID, newTagname string) (Response, error) {
 
 	err = s.storage.Update(*tag)
 	if err != nil {
-		return Response{}, bareknews.ErrInternalServer
+		return Response{}, err
 	}
 
 	return Response{
-		ID: tag.Label.ID,
+		ID:   tag.Label.ID,
 		Name: tag.Label.Name,
 		Slug: tag.Slug.String(),
 	}, nil
@@ -81,13 +81,13 @@ func (s Service) Delete(id uuid.UUID) error {
 		if errors.Is(err, sql.ErrNoRows) {
 			return bareknews.ErrDataNotFound
 		} else {
-			return bareknews.ErrInternalServer
+			return err
 		}
 	}
 
 	err = s.storage.Delete(id)
 	if err != nil {
-		return bareknews.ErrInternalServer
+		return err
 	}
 
 	return nil
@@ -99,7 +99,7 @@ func (s Service) GetById(id uuid.UUID) (Response, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
 		} else {
-			return Response{}, bareknews.ErrInternalServer
+			return Response{}, err
 		}
 	}
 
@@ -132,7 +132,7 @@ func (s Service) GetByIds(ids []uuid.UUID) ([]Response, error) {
 func (s Service) GetAll() ([]Response, error) {
 	tg, err := s.storage.GetAll()
 	if err != nil {
-		return []Response{}, bareknews.ErrInternalServer
+		return []Response{}, err
 	}
 
 	r := make([]Response, 0)
