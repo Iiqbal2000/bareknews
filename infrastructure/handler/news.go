@@ -1,10 +1,14 @@
 package handler
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/services/posting"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type News struct {
@@ -18,70 +22,179 @@ type NewsInput struct {
 	Body   string   `json:"body"`
 }
 
-type Response map[string]interface{}
-
-func (h News) Routes(router *gin.RouterGroup) {
-	r := router.Group("/news")
-	// r.POST("/", h.AddNews)
-	// r.GET("/", h.GetAll)
-	r.GET("/:id", h.GetById)
+func (n News) Route(r chi.Router) {
+	r.Post("/", n.Create)
+	r.Get("/{newsId}", n.GetById)
+	r.Put("/{newsId}", n.Update)
+	r.Delete("/{newsId}", n.Delete)
+	r.Get("/", n.GetAll)
 }
 
-func (h News) AddNews(c *gin.Context) {
-	newsIn := new(NewsInput)
-	if err := c.ShouldBindJSON(newsIn); err != nil {
-		c.JSON(http.StatusInternalServerError, Response{
-			"error":   true,
-			"message": "internal server errror",
-		})
-		return
-	}
+func (n News) Create(w http.ResponseWriter, r *http.Request) {
+	payloadIn := NewsInput{}
 
-	err := h.Service.Create(newsIn.Title, newsIn.Body, newsIn.Status, newsIn.Tags)
+	err := json.NewDecoder(r.Body).Decode(&payloadIn)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, Response{
-			"error":   true,
-			"message": err.Error(),
-		})
+		err = bareknews.WriteErrResponse(w, bareknews.ErrInvalidJSON)
+		if err != nil {
+			log.Println("(error) news.handler.create: ", err.Error())
+		}
 		return
 	}
 
-	c.JSON(http.StatusCreated, Response{
-		"error":   false,
-		"message": "news successfully created",
-	})
-}
-
-func (h News) GetById(c *gin.Context) {
-	idparam := c.Param("id")
-	news, err := h.Service.GetById(idparam)
+	nws, err := n.Service.Create(payloadIn.Title, payloadIn.Body, payloadIn.Status, payloadIn.Tags)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		err = bareknews.WriteErrResponse(w, err)
+		if err != nil {
+			log.Println("(error) news.handler.create: ", err.Error())
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"error":   true,
-		"message": "news successfully got",
-		"data":    news,
-	})
+	payloadRes := map[string]interface{}{
+		"message": "Successfully creating a news",
+		"data":    nws,
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	err = json.NewEncoder(w).Encode(payloadRes)
+	if err != nil {
+		log.Println("(error) news.handler.create: ", err.Error())
+	}
 }
 
-// func GetAll(c *gin.Context, h posting.Service) {
-// 	news, err := h.GetAll()
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, Response{
-// 			"error":   true,
-// 			"message": "internal server errror",
-// 		})
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"error":   false,
-// 		"message": "successfuly got all news",
-// 		"data":    news,
-// 	})
-// }
+func (n News) GetById(w http.ResponseWriter, r *http.Request) {
+	rawID := chi.URLParam(r, "newsId")
+	id, err := uuid.Parse(rawID)
+	if err != nil {
+		err = bareknews.WriteErrResponse(w, bareknews.ErrDataNotFound)
+		if err != nil {
+			log.Println("(error) news.handler.getById: ", err.Error())
+		}
+		return
+	}
+
+	nws, err := n.Service.GetById(id)
+	if err != nil {
+		err = bareknews.WriteErrResponse(w, err)
+		if err != nil {
+			log.Println("(error) news.handler.getById: ", err.Error())
+		}
+		return
+	}
+
+	payloadRes := map[string]interface{}{
+		"message": "Successfully getting a news",
+		"data":    nws,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(payloadRes)
+	if err != nil {
+		log.Println("(error) news.handler.getById: ", err.Error())
+	}
+}
+
+func (n News) Update(w http.ResponseWriter, r *http.Request) {
+	rawID := chi.URLParam(r, "newsId")
+	id, err := uuid.Parse(rawID)
+	if err != nil {
+		err = bareknews.WriteErrResponse(w, bareknews.ErrDataNotFound)
+		if err != nil {
+			log.Println("(error) news.handler.update: ", err.Error())
+		}
+		return
+	}
+
+	payloadIn := NewsInput{}
+
+	err = json.NewDecoder(r.Body).Decode(&payloadIn)
+	if err != nil {
+		err = bareknews.WriteErrResponse(w, bareknews.ErrInvalidJSON)
+		if err != nil {
+			log.Println("(error) news.handler.update: ", err.Error())
+		}
+		return
+	}
+
+	nws, err := n.Service.Update(
+		id,
+		payloadIn.Title,
+		payloadIn.Body,
+		payloadIn.Status,
+		payloadIn.Tags,
+	)
+
+	if err != nil {
+		err = bareknews.WriteErrResponse(w, err)
+		if err != nil {
+			log.Println("(error) news.handler.update: ", err.Error())
+		}
+		return
+	}
+
+	payloadRes := map[string]interface{}{
+		"message": "Successfully updating a news",
+		"data":    nws,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(payloadRes)
+	if err != nil {
+		log.Println("(error) news.handler.update: ", err.Error())
+	}
+}
+
+func (n News) Delete(w http.ResponseWriter, r *http.Request) {
+	rawID := chi.URLParam(r, "newsId")
+	id, err := uuid.Parse(rawID)
+	if err != nil {
+		err = bareknews.WriteErrResponse(w, bareknews.ErrDataNotFound)
+		if err != nil {
+			log.Println("(error) news.handler.delete: ", err.Error())
+		}
+		return
+	}
+
+	err = n.Service.Delete(id)
+	if err != nil {
+		err = bareknews.WriteErrResponse(w, err)
+		if err != nil {
+			log.Println("(error) news.handler.delete: ", err.Error())
+		}
+		return
+	}
+
+	payloadRes := map[string]interface{}{
+		"message": "Successfully deleting a news",
+		"data":    struct{}{},
+	}
+
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(payloadRes)
+	if err != nil {
+		log.Println("(error) news.handler.delete: ", err.Error())
+	}
+}
+
+func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
+	newsRes, err := n.Service.GetAll()
+	if err != nil {
+		err = bareknews.WriteErrResponse(w, err)
+		if err != nil {
+			log.Println("(error) news.handler.getAll: ", err.Error())
+		}
+		return
+	}
+
+	payloadRes := map[string]interface{}{
+		"message": "Successfuly getting all news",
+		"data": newsRes,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(payloadRes)
+	if err != nil {
+		log.Println("(error) news.handler.getAll: ", err.Error())
+	}
+}
