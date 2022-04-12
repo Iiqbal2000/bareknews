@@ -95,7 +95,13 @@ func (t Tag) GetById(id uuid.UUID) (*tags.Tags, error) {
 
 func (t Tag) GetByIds(ids []uuid.UUID) ([]tags.Tags, error) {
 	builder := sqlbuilder.NewSelectBuilder()
-	listMark := sqlbuilder.List(ids)
+	idstr := make([]string, 0)
+	
+	for _, elem := range ids {
+		idstr = append(idstr, elem.String())
+	}
+
+	listMark := sqlbuilder.List(idstr)
 
 	builder.Select("id", "name", "slug")
 	builder.From("tags")

@@ -121,3 +121,32 @@ func TestGetByNames(t *testing.T) {
 	is.Equal(got[1].Label.Name, tag2.Label.Name)
 	is.Equal(got[1].Slug, tag2.Slug)
 }
+
+func TestGetById(t *testing.T) {
+	conn := Run(dbfile, true)
+	storage := Tag{conn}
+	is := is.New(t)
+	tag1 := tags.New("tag 1")
+	err := storage.Save(*tag1)
+	is.NoErr(err)
+
+	got, err := storage.GetById(tag1.Label.ID)
+	is.NoErr(err)
+	is.Equal(got.Label.Name, "tag 1")
+}
+
+func TestGetByIds(t *testing.T) {
+	conn := Run(dbfile, true)
+	storage := Tag{conn}
+	is := is.New(t)
+	tag1 := tags.New("tag 1")
+	tag2 := tags.New("tag 2")
+	err := storage.Save(*tag1)
+	is.NoErr(err)
+	err = storage.Save(*tag2)
+	is.NoErr(err)
+
+	got, err := storage.GetByIds([]uuid.UUID{tag1.Label.ID, tag2.Label.ID})
+	is.NoErr(err)
+	is.Equal(len(got), 2)
+}
