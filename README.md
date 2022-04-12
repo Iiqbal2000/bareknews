@@ -3,33 +3,25 @@ This is a news management system
 
 ## Endpoint List
 
-### Get a news
+### Add a Tag
 
-## Form error response with single field
-```json
-{
-  "error": {
-    "message" : "Something bad happened :(",
-    "description" : "More details about the error here"
-  }
-}
+```bash
+curl -X "POST" "http://localhost:3333/tags" \
+     -H 'Content-Type: application/json' \
+     -H 'Accept: application/json' \
+     -d $'{
+  "title": "I Am Ozzy",
+  "author": "Ozzy Osbourne",
+  "pages": 294,
+  "quantity":10
+}'
 ```
 
-## Form error response with multiple fields
+## Form Error Response
 ```json
 {
   "error": {
-    "message" : "Validation Failed",
-    "items" : [
-      {
-        "field" : "first_name",
-        "message" : "First name cannot have fancy characters"
-      },
-      {
-        "field" : "password",
-        "message" : "Password cannot be blank"
-      }
-    ]
+    "message" : "Something bad happened",
   }
 }
 ```
