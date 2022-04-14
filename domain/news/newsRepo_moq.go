@@ -27,6 +27,9 @@ var _ Repository = &RepositoryMock{}
 // 			GetAllFunc: func() ([]News, error) {
 // 				panic("mock out the GetAll method")
 // 			},
+// 			GetAllByTopicFunc: func(topic uuid.UUID) ([]News, error) {
+// 				panic("mock out the GetAllByTopic method")
+// 			},
 // 			GetByIdFunc: func(id uuid.UUID) (*News, error) {
 // 				panic("mock out the GetById method")
 // 			},
@@ -52,6 +55,9 @@ type RepositoryMock struct {
 	// GetAllFunc mocks the GetAll method.
 	GetAllFunc func() ([]News, error)
 
+	// GetAllByTopicFunc mocks the GetAllByTopic method.
+	GetAllByTopicFunc func(topic uuid.UUID) ([]News, error)
+
 	// GetByIdFunc mocks the GetById method.
 	GetByIdFunc func(id uuid.UUID) (*News, error)
 
@@ -76,6 +82,11 @@ type RepositoryMock struct {
 		// GetAll holds details about calls to the GetAll method.
 		GetAll []struct {
 		}
+		// GetAllByTopic holds details about calls to the GetAllByTopic method.
+		GetAllByTopic []struct {
+			// Topic is the topic argument value.
+			Topic uuid.UUID
+		}
 		// GetById holds details about calls to the GetById method.
 		GetById []struct {
 			// ID is the id argument value.
@@ -92,12 +103,13 @@ type RepositoryMock struct {
 			News News
 		}
 	}
-	lockCount   sync.RWMutex
-	lockDelete  sync.RWMutex
-	lockGetAll  sync.RWMutex
-	lockGetById sync.RWMutex
-	lockSave    sync.RWMutex
-	lockUpdate  sync.RWMutex
+	lockCount         sync.RWMutex
+	lockDelete        sync.RWMutex
+	lockGetAll        sync.RWMutex
+	lockGetAllByTopic sync.RWMutex
+	lockGetById       sync.RWMutex
+	lockSave          sync.RWMutex
+	lockUpdate        sync.RWMutex
 }
 
 // Count calls CountFunc.
@@ -185,6 +197,37 @@ func (mock *RepositoryMock) GetAllCalls() []struct {
 	mock.lockGetAll.RLock()
 	calls = mock.calls.GetAll
 	mock.lockGetAll.RUnlock()
+	return calls
+}
+
+// GetAllByTopic calls GetAllByTopicFunc.
+func (mock *RepositoryMock) GetAllByTopic(topic uuid.UUID) ([]News, error) {
+	if mock.GetAllByTopicFunc == nil {
+		panic("RepositoryMock.GetAllByTopicFunc: method is nil but Repository.GetAllByTopic was just called")
+	}
+	callInfo := struct {
+		Topic uuid.UUID
+	}{
+		Topic: topic,
+	}
+	mock.lockGetAllByTopic.Lock()
+	mock.calls.GetAllByTopic = append(mock.calls.GetAllByTopic, callInfo)
+	mock.lockGetAllByTopic.Unlock()
+	return mock.GetAllByTopicFunc(topic)
+}
+
+// GetAllByTopicCalls gets all the calls that were made to GetAllByTopic.
+// Check the length with:
+//     len(mockedRepository.GetAllByTopicCalls())
+func (mock *RepositoryMock) GetAllByTopicCalls() []struct {
+	Topic uuid.UUID
+} {
+	var calls []struct {
+		Topic uuid.UUID
+	}
+	mock.lockGetAllByTopic.RLock()
+	calls = mock.calls.GetAllByTopic
+	mock.lockGetAllByTopic.RUnlock()
 	return calls
 }
 

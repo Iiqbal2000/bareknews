@@ -178,22 +178,42 @@ func (n News) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
-	newsRes, err := n.Service.GetAll()
-	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+	q := r.URL.Query()
+	topic := q.Get("topic")
+	
+	newsRes := make([]posting.Response, 0)
+
+	if topic != "" {
+		nws, err := n.Service.GetAllByTopic(topic)
 		if err != nil {
-			log.Println("(error) news.handler.getAll: ", err.Error())
+			err = bareknews.WriteErrResponse(w, err)
+			if err != nil {
+				log.Println("(error) news.handler.getAll: ", err.Error())
+			}
+			return
 		}
-		return
+
+		newsRes = append(newsRes, nws...)
+	} else {
+		nws, err := n.Service.GetAll()
+		if err != nil {
+			err = bareknews.WriteErrResponse(w, err)
+			if err != nil {
+				log.Println("(error) news.handler.getAll: ", err.Error())
+			}
+			return
+		}
+
+		newsRes = append(newsRes, nws...)
 	}
 
 	payloadRes := map[string]interface{}{
 		"message": "Successfuly getting all news",
-		"data": newsRes,
+		"data":    newsRes,
 	}
 
 	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(payloadRes)
+	err := json.NewEncoder(w).Encode(payloadRes)
 	if err != nil {
 		log.Println("(error) news.handler.getAll: ", err.Error())
 	}

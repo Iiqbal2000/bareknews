@@ -189,3 +189,32 @@ func (s Service) GetAll() ([]Response, error) {
 
 	return r, nil
 }
+
+func (s Service) GetAllByTopic(topic string) ([]Response, error) {
+	tg := s.taggingSvc.GetByNames([]string{topic})
+	
+	nws, err := s.storage.GetAllByTopic(tg[0].ID)
+	if err != nil {
+		return []Response{}, nil
+	}
+
+	r := make([]Response, 0)
+
+	for _, nw := range nws {
+		tgs, err := s.taggingSvc.GetByIds(nw.TagsID)
+		if err != nil {
+			return []Response{}, err
+		}
+
+		r = append(r, Response{
+			ID:     nw.Post.ID,
+			Title:  nw.Post.Title,
+			Body:   nw.Post.Body,
+			Status: nw.Status.String(),
+			Slug:   nw.Slug.String(),
+			Tags:   tgs,
+		})
+	}
+
+	return r, nil
+}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/news"
-	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 )
@@ -19,7 +18,10 @@ func TestSaveNews(t *testing.T) {
 
 	tgId := uuid.New()
 
-	want := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []uuid.UUID{tgId})
+	title := "news 1"
+	body := "Struct fields can also use tags to more specifically generate data for that field type."
+
+	want := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
 	err := newsStore.Save(*want)
 	is.NoErr(err)
 
@@ -33,16 +35,19 @@ func TestSaveNews(t *testing.T) {
 }
 
 func TestUpdateNews(t *testing.T) {
-	conn := Run(dbfile,true)
+	conn := Run(dbfile, true)
 	newsStore := News{conn}
 	is := is.New(t)
 	tgId := uuid.New()
 
-	news := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []uuid.UUID{tgId})
+	title := "news 1"
+	body := "Struct fields can also use tags to more specifically generate data for that field type."
+
+	news := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
 	err := newsStore.Save(*news)
 	is.NoErr(err)
 
-	wantTitle := gofakeit.Sentence(10)
+	wantTitle := "news 2"
 	wantStatus := domain.Publish
 
 	news.ChangeTitle(wantTitle)
@@ -59,13 +64,16 @@ func TestUpdateNews(t *testing.T) {
 }
 
 func TestDeleteNews(t *testing.T) {
-	conn := Run(dbfile,true)
+	conn := Run(dbfile, true)
 	newsStore := News{conn}
 	is := is.New(t)
 
 	tgId := uuid.New()
 
-	news := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []uuid.UUID{tgId})
+	title := "news 1"
+	body := "Struct fields can also use tags to more specifically generate data for that field type."
+
+	news := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
 	err := newsStore.Save(*news)
 	is.NoErr(err)
 
@@ -77,13 +85,16 @@ func TestDeleteNews(t *testing.T) {
 }
 
 func TestGetByID(t *testing.T) {
-	conn := Run(dbfile,true)
+	conn := Run(dbfile, true)
 	newsStore := News{conn}
 	is := is.New(t)
 
 	tgId := uuid.New()
 
-	want := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []uuid.UUID{tgId})
+	title := "news 1"
+	body := "Struct fields can also use tags to more specifically generate data for that field type."
+
+	want := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
 	err := newsStore.Save(*want)
 	is.NoErr(err)
 
@@ -99,24 +110,72 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestGetAllNews(t *testing.T) {
-	conn := Run(dbfile,true)
+	conn := Run(dbfile, true)
 	newsStore := News{conn}
 
 	tgId := uuid.New()
 
-	wantNews1 := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []uuid.UUID{tgId})
+	title1 := "news 1"
+	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
+
+	wantNews1 := news.New(title1, body1, domain.Draft, []uuid.UUID{tgId})
 	err := newsStore.Save(*wantNews1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	wantNews2 := news.New(gofakeit.Sentence(10), gofakeit.Sentence(100), domain.Draft, []uuid.UUID{tgId})
+	title2 := "news 2"
+	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+
+	wantNews2 := news.New(title2, body2, domain.Draft, []uuid.UUID{tgId})
 	err = newsStore.Save(*wantNews2)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	got, err := newsStore.GetAll()
+	is := is.New(t)
+	is.NoErr(err)
+	is.Equal(len(got), 2)
+
+	is.Equal(got[0].Post.Title, wantNews1.Post.Title)
+	is.Equal(got[0].Status, wantNews1.Status)
+	is.Equal(got[0].Post.Body, wantNews1.Post.Body)
+	is.Equal(got[0].Slug, wantNews1.Slug)
+	is.Equal(len(got[0].TagsID), 1)
+
+	is.Equal(got[1].Post.Title, wantNews2.Post.Title)
+	is.Equal(got[1].Status, wantNews2.Status)
+	is.Equal(got[1].Post.Body, wantNews2.Post.Body)
+	is.Equal(got[1].Slug, wantNews2.Slug)
+	is.Equal(len(got[1].TagsID), 1)
+}
+
+func TestGetAllByTopic(t *testing.T) {
+	conn := Run(dbfile, true)
+	newsStore := News{conn}
+
+	tgId := uuid.New()
+
+	title1 := "news 1"
+	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
+
+	wantNews1 := news.New(title1, body1, domain.Draft, []uuid.UUID{tgId})
+	err := newsStore.Save(*wantNews1)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	title2 := "news 2"
+	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+
+	wantNews2 := news.New(title2, body2, domain.Draft, []uuid.UUID{tgId})
+	err = newsStore.Save(*wantNews2)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	got, err := newsStore.GetAllByTopic(tgId)
 	is := is.New(t)
 	is.NoErr(err)
 	is.Equal(len(got), 2)

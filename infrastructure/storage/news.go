@@ -223,6 +223,93 @@ func (s News) GetAll() ([]news.News, error) {
 	return newsResults, nil
 }
 
+func (s News) GetAllByTopic(topic uuid.UUID) ([]news.News, error) {
+	newsID, err := s.getNewsIds(topic)
+	if err != nil {
+		return []news.News{}, err
+	}
+
+	idNewsStr := make([]string, 0)
+	
+	for _, elem := range newsID {
+		idNewsStr = append(idNewsStr, elem.String())
+	}
+
+	newsIdMark := sqlbuilder.List(idNewsStr)
+	builder := sqlbuilder.NewSelectBuilder()
+	builder.Select("id", "title", "status", "body", "slug")
+	builder.From("news")
+	builder.Where(builder.In("id", newsIdMark))
+	newsQuery, newsArgs := builder.Build()
+
+	newsRows, err := s.Conn.Query(newsQuery, newsArgs...)
+	if err != nil {
+		return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
+	}
+
+	defer newsRows.Close()
+
+	newsResult := make([]news.News, 0)
+
+	for newsRows.Next() {
+		post := domain.Post{}
+		slug := new(domain.Slug)
+		status := new(domain.Status)
+		err = newsRows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
+		if err != nil {
+			return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
+		}
+		tagsResult, err := s.getTags(post.ID)
+		if err != nil {
+			return []news.News{}, err
+		}
+		newsResult = append(newsResult, news.News{
+			Post:   post,
+			Status: *status,
+			Slug:   *slug,
+			TagsID: tagsResult,
+		})
+	}
+
+	if newsRows.Err() != nil {
+		return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
+	}
+
+	return newsResult, nil
+}
+
+func (s News) getNewsIds(tagsID uuid.UUID) ([]uuid.UUID, error) {
+	builder := sqlbuilder.NewSelectBuilder()
+	builder.Distinct()
+	builder.Select("newsID")
+	builder.From("news_tags")
+	builder.Where(builder.Equal("tagsID", tagsID))
+	query, args := builder.Build()
+	rows, err := s.Conn.Query(query, args...)
+	if err != nil {
+		return []uuid.UUID{}, errors.Wrap(err, "storage.news.getNewsIds")
+	}
+
+	defer rows.Close()
+
+	newsID := make([]uuid.UUID, 0)
+
+	for rows.Next() {
+		id := uuid.UUID{}
+		err = rows.Scan(&id)
+		if err != nil {
+			return []uuid.UUID{}, errors.Wrap(err, "storage.news.getNewsIds")
+		}
+		newsID = append(newsID, id)
+	}
+
+	if rows.Err() != nil {
+		return []uuid.UUID{}, errors.Wrap(err, "storage.news.getNewsIds")
+	}
+
+	return newsID, nil
+}
+
 func (s News) insertTags(tx *sql.Tx, n news.News) error {
 	for i := range n.TagsID {
 		builder := sqlbuilder.NewInsertBuilder()
