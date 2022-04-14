@@ -2,13 +2,13 @@ package storage
 
 import (
 	"database/sql"
-	"strings"
 
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/tags"
-	"github.com/Iiqbal2000/bareknews"
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 )
 
@@ -24,8 +24,10 @@ func (t Tag) Save(tag tags.Tags) error {
 
 	_, err := t.Conn.Exec(query, args...)
 	if err != nil {
-		if strings.Contains(err.Error(), bareknews.SubStrUniqueConstraint) {
-			return bareknews.ErrDataAlreadyExist
+		if possibleErr, ok := err.(sqlite3.Error); ok {
+			if possibleErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+				return bareknews.ErrDataAlreadyExist
+			}
 		}
 
 		return errors.Wrap(err, "storage.tags.save")
@@ -96,7 +98,7 @@ func (t Tag) GetById(id uuid.UUID) (*tags.Tags, error) {
 func (t Tag) GetByIds(ids []uuid.UUID) ([]tags.Tags, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	idstr := make([]string, 0)
-	
+
 	for _, elem := range ids {
 		idstr = append(idstr, elem.String())
 	}

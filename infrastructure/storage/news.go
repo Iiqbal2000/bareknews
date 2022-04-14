@@ -2,13 +2,13 @@ package storage
 
 import (
 	"database/sql"
-	"strings"
 
 	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/news"
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 )
 
@@ -38,8 +38,10 @@ func (s News) Save(n news.News) error {
 
 	_, err = tx.Exec(query, args...)
 	if err != nil {
-		if strings.Contains(err.Error(), bareknews.SubStrUniqueConstraint) {
-			return bareknews.ErrDataAlreadyExist
+		if possibleErr, ok := err.(sqlite3.Error); ok {
+			if possibleErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+				return bareknews.ErrDataAlreadyExist
+			}
 		}
 		return errors.Wrap(err, "storage.news.save")
 	}
@@ -230,7 +232,7 @@ func (s News) GetAllByTopic(topic uuid.UUID) ([]news.News, error) {
 	}
 
 	idNewsStr := make([]string, 0)
-	
+
 	for _, elem := range newsID {
 		idNewsStr = append(idNewsStr, elem.String())
 	}
@@ -320,6 +322,11 @@ func (s News) insertTags(tx *sql.Tx, n news.News) error {
 
 		_, err := tx.Exec(query, args...)
 		if err != nil {
+			if possibleErr, ok := err.(sqlite3.Error); ok {
+				if possibleErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+					return bareknews.ErrDataAlreadyExist
+				}
+			}
 			return errors.Wrap(err, "storage.news.insertTagsReference")
 		}
 	}
