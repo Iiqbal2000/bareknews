@@ -11,7 +11,7 @@ var (
 	ErrBlankTag = errors.New("invalid tag")
 )
 
-// Agregates
+// Tags is an aggregrate that represent a tag
 type Tags struct {
 	Label domain.Label
 	Slug  domain.Slug
