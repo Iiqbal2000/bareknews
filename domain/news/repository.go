@@ -1,14 +1,18 @@
 package news
 
-import "github.com/google/uuid"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 //go:generate moq -out newsRepo_moq.go . Repository
 type Repository interface {
-	Save(News) error
-	GetAll() ([]News, error)
-	GetById(id uuid.UUID) (*News, error)
-	GetAllByTopic(topic uuid.UUID) ([]News, error)
-	Count(id uuid.UUID) (int, error)
-	Update(News) error
-	Delete(uuid.UUID) error
+	Save(context.Context, News) error
+	GetAll(context.Context) ([]News, error)
+	GetById(context.Context, uuid.UUID) (*News, error)
+	GetAllByTopic(context.Context, uuid.UUID) ([]News, error)
+	Count(context.Context, uuid.UUID) (int, error)
+	Update(context.Context, News) error
+	Delete(context.Context, uuid.UUID) error
 }

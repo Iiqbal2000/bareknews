@@ -3,7 +3,6 @@ package storage
 import (
 	"database/sql"
 	"log"
-	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -29,12 +28,8 @@ var news_tagsquery = `CREATE TABLE IF NOT EXISTS news_tags(
 	FOREIGN KEY(tagsID) REFERENCES tags(id) ON DELETE CASCADE
 )`
 
-func Run(dbpath string, dropTable bool) *sql.DB {
-	if _, err := os.Stat(dbpath); err != nil {
-		log.Fatal("The DB file is not found")
-	}
-
-	db, err := sql.Open("sqlite3", dbpath)
+func Run(dbSource string, dropTable bool) *sql.DB {
+	db, err := sql.Open("sqlite3", dbSource)
 	if err != nil {
 		log.Fatal("failure when opening db connection: ", err.Error())
 	}

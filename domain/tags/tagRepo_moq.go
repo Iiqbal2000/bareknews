@@ -4,6 +4,7 @@
 package tags
 
 import (
+	"context"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -18,28 +19,28 @@ var _ Repository = &RepositoryMock{}
 //
 // 		// make and configure a mocked Repository
 // 		mockedRepository := &RepositoryMock{
-// 			CountFunc: func(id uuid.UUID) (int, error) {
+// 			CountFunc: func(contextMoqParam context.Context, uUID uuid.UUID) (int, error) {
 // 				panic("mock out the Count method")
 // 			},
-// 			DeleteFunc: func(id uuid.UUID) error {
+// 			DeleteFunc: func(contextMoqParam context.Context, uUID uuid.UUID) error {
 // 				panic("mock out the Delete method")
 // 			},
-// 			GetAllFunc: func() ([]Tags, error) {
+// 			GetAllFunc: func(contextMoqParam context.Context) ([]Tags, error) {
 // 				panic("mock out the GetAll method")
 // 			},
-// 			GetByIdFunc: func(id uuid.UUID) (*Tags, error) {
+// 			GetByIdFunc: func(contextMoqParam context.Context, uUID uuid.UUID) (*Tags, error) {
 // 				panic("mock out the GetById method")
 // 			},
-// 			GetByIdsFunc: func(ids []uuid.UUID) ([]Tags, error) {
+// 			GetByIdsFunc: func(contextMoqParam context.Context, uUIDs []uuid.UUID) ([]Tags, error) {
 // 				panic("mock out the GetByIds method")
 // 			},
-// 			GetByNamesFunc: func(names ...string) ([]Tags, error) {
+// 			GetByNamesFunc: func(contextMoqParam context.Context, strings ...string) ([]Tags, error) {
 // 				panic("mock out the GetByNames method")
 // 			},
-// 			SaveFunc: func(tags Tags) error {
+// 			SaveFunc: func(contextMoqParam context.Context, tags Tags) error {
 // 				panic("mock out the Save method")
 // 			},
-// 			UpdateFunc: func(tags Tags) error {
+// 			UpdateFunc: func(contextMoqParam context.Context, tags Tags) error {
 // 				panic("mock out the Update method")
 // 			},
 // 		}
@@ -50,66 +51,82 @@ var _ Repository = &RepositoryMock{}
 // 	}
 type RepositoryMock struct {
 	// CountFunc mocks the Count method.
-	CountFunc func(id uuid.UUID) (int, error)
+	CountFunc func(contextMoqParam context.Context, uUID uuid.UUID) (int, error)
 
 	// DeleteFunc mocks the Delete method.
-	DeleteFunc func(id uuid.UUID) error
+	DeleteFunc func(contextMoqParam context.Context, uUID uuid.UUID) error
 
 	// GetAllFunc mocks the GetAll method.
-	GetAllFunc func() ([]Tags, error)
+	GetAllFunc func(contextMoqParam context.Context) ([]Tags, error)
 
 	// GetByIdFunc mocks the GetById method.
-	GetByIdFunc func(id uuid.UUID) (*Tags, error)
+	GetByIdFunc func(contextMoqParam context.Context, uUID uuid.UUID) (*Tags, error)
 
 	// GetByIdsFunc mocks the GetByIds method.
-	GetByIdsFunc func(ids []uuid.UUID) ([]Tags, error)
+	GetByIdsFunc func(contextMoqParam context.Context, uUIDs []uuid.UUID) ([]Tags, error)
 
 	// GetByNamesFunc mocks the GetByNames method.
-	GetByNamesFunc func(names ...string) ([]Tags, error)
+	GetByNamesFunc func(contextMoqParam context.Context, strings ...string) ([]Tags, error)
 
 	// SaveFunc mocks the Save method.
-	SaveFunc func(tags Tags) error
+	SaveFunc func(contextMoqParam context.Context, tags Tags) error
 
 	// UpdateFunc mocks the Update method.
-	UpdateFunc func(tags Tags) error
+	UpdateFunc func(contextMoqParam context.Context, tags Tags) error
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Count holds details about calls to the Count method.
 		Count []struct {
-			// ID is the id argument value.
-			ID uuid.UUID
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// UUID is the uUID argument value.
+			UUID uuid.UUID
 		}
 		// Delete holds details about calls to the Delete method.
 		Delete []struct {
-			// ID is the id argument value.
-			ID uuid.UUID
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// UUID is the uUID argument value.
+			UUID uuid.UUID
 		}
 		// GetAll holds details about calls to the GetAll method.
 		GetAll []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 		}
 		// GetById holds details about calls to the GetById method.
 		GetById []struct {
-			// ID is the id argument value.
-			ID uuid.UUID
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// UUID is the uUID argument value.
+			UUID uuid.UUID
 		}
 		// GetByIds holds details about calls to the GetByIds method.
 		GetByIds []struct {
-			// Ids is the ids argument value.
-			Ids []uuid.UUID
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// UUIDs is the uUIDs argument value.
+			UUIDs []uuid.UUID
 		}
 		// GetByNames holds details about calls to the GetByNames method.
 		GetByNames []struct {
-			// Names is the names argument value.
-			Names []string
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// Strings is the strings argument value.
+			Strings []string
 		}
 		// Save holds details about calls to the Save method.
 		Save []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 			// Tags is the tags argument value.
 			Tags Tags
 		}
 		// Update holds details about calls to the Update method.
 		Update []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 			// Tags is the tags argument value.
 			Tags Tags
 		}
@@ -125,29 +142,33 @@ type RepositoryMock struct {
 }
 
 // Count calls CountFunc.
-func (mock *RepositoryMock) Count(id uuid.UUID) (int, error) {
+func (mock *RepositoryMock) Count(contextMoqParam context.Context, uUID uuid.UUID) (int, error) {
 	if mock.CountFunc == nil {
 		panic("RepositoryMock.CountFunc: method is nil but Repository.Count was just called")
 	}
 	callInfo := struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}{
-		ID: id,
+		ContextMoqParam: contextMoqParam,
+		UUID:            uUID,
 	}
 	mock.lockCount.Lock()
 	mock.calls.Count = append(mock.calls.Count, callInfo)
 	mock.lockCount.Unlock()
-	return mock.CountFunc(id)
+	return mock.CountFunc(contextMoqParam, uUID)
 }
 
 // CountCalls gets all the calls that were made to Count.
 // Check the length with:
 //     len(mockedRepository.CountCalls())
 func (mock *RepositoryMock) CountCalls() []struct {
-	ID uuid.UUID
+	ContextMoqParam context.Context
+	UUID            uuid.UUID
 } {
 	var calls []struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}
 	mock.lockCount.RLock()
 	calls = mock.calls.Count
@@ -156,29 +177,33 @@ func (mock *RepositoryMock) CountCalls() []struct {
 }
 
 // Delete calls DeleteFunc.
-func (mock *RepositoryMock) Delete(id uuid.UUID) error {
+func (mock *RepositoryMock) Delete(contextMoqParam context.Context, uUID uuid.UUID) error {
 	if mock.DeleteFunc == nil {
 		panic("RepositoryMock.DeleteFunc: method is nil but Repository.Delete was just called")
 	}
 	callInfo := struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}{
-		ID: id,
+		ContextMoqParam: contextMoqParam,
+		UUID:            uUID,
 	}
 	mock.lockDelete.Lock()
 	mock.calls.Delete = append(mock.calls.Delete, callInfo)
 	mock.lockDelete.Unlock()
-	return mock.DeleteFunc(id)
+	return mock.DeleteFunc(contextMoqParam, uUID)
 }
 
 // DeleteCalls gets all the calls that were made to Delete.
 // Check the length with:
 //     len(mockedRepository.DeleteCalls())
 func (mock *RepositoryMock) DeleteCalls() []struct {
-	ID uuid.UUID
+	ContextMoqParam context.Context
+	UUID            uuid.UUID
 } {
 	var calls []struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}
 	mock.lockDelete.RLock()
 	calls = mock.calls.Delete
@@ -187,24 +212,29 @@ func (mock *RepositoryMock) DeleteCalls() []struct {
 }
 
 // GetAll calls GetAllFunc.
-func (mock *RepositoryMock) GetAll() ([]Tags, error) {
+func (mock *RepositoryMock) GetAll(contextMoqParam context.Context) ([]Tags, error) {
 	if mock.GetAllFunc == nil {
 		panic("RepositoryMock.GetAllFunc: method is nil but Repository.GetAll was just called")
 	}
 	callInfo := struct {
-	}{}
+		ContextMoqParam context.Context
+	}{
+		ContextMoqParam: contextMoqParam,
+	}
 	mock.lockGetAll.Lock()
 	mock.calls.GetAll = append(mock.calls.GetAll, callInfo)
 	mock.lockGetAll.Unlock()
-	return mock.GetAllFunc()
+	return mock.GetAllFunc(contextMoqParam)
 }
 
 // GetAllCalls gets all the calls that were made to GetAll.
 // Check the length with:
 //     len(mockedRepository.GetAllCalls())
 func (mock *RepositoryMock) GetAllCalls() []struct {
+	ContextMoqParam context.Context
 } {
 	var calls []struct {
+		ContextMoqParam context.Context
 	}
 	mock.lockGetAll.RLock()
 	calls = mock.calls.GetAll
@@ -213,29 +243,33 @@ func (mock *RepositoryMock) GetAllCalls() []struct {
 }
 
 // GetById calls GetByIdFunc.
-func (mock *RepositoryMock) GetById(id uuid.UUID) (*Tags, error) {
+func (mock *RepositoryMock) GetById(contextMoqParam context.Context, uUID uuid.UUID) (*Tags, error) {
 	if mock.GetByIdFunc == nil {
 		panic("RepositoryMock.GetByIdFunc: method is nil but Repository.GetById was just called")
 	}
 	callInfo := struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}{
-		ID: id,
+		ContextMoqParam: contextMoqParam,
+		UUID:            uUID,
 	}
 	mock.lockGetById.Lock()
 	mock.calls.GetById = append(mock.calls.GetById, callInfo)
 	mock.lockGetById.Unlock()
-	return mock.GetByIdFunc(id)
+	return mock.GetByIdFunc(contextMoqParam, uUID)
 }
 
 // GetByIdCalls gets all the calls that were made to GetById.
 // Check the length with:
 //     len(mockedRepository.GetByIdCalls())
 func (mock *RepositoryMock) GetByIdCalls() []struct {
-	ID uuid.UUID
+	ContextMoqParam context.Context
+	UUID            uuid.UUID
 } {
 	var calls []struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}
 	mock.lockGetById.RLock()
 	calls = mock.calls.GetById
@@ -244,29 +278,33 @@ func (mock *RepositoryMock) GetByIdCalls() []struct {
 }
 
 // GetByIds calls GetByIdsFunc.
-func (mock *RepositoryMock) GetByIds(ids []uuid.UUID) ([]Tags, error) {
+func (mock *RepositoryMock) GetByIds(contextMoqParam context.Context, uUIDs []uuid.UUID) ([]Tags, error) {
 	if mock.GetByIdsFunc == nil {
 		panic("RepositoryMock.GetByIdsFunc: method is nil but Repository.GetByIds was just called")
 	}
 	callInfo := struct {
-		Ids []uuid.UUID
+		ContextMoqParam context.Context
+		UUIDs           []uuid.UUID
 	}{
-		Ids: ids,
+		ContextMoqParam: contextMoqParam,
+		UUIDs:           uUIDs,
 	}
 	mock.lockGetByIds.Lock()
 	mock.calls.GetByIds = append(mock.calls.GetByIds, callInfo)
 	mock.lockGetByIds.Unlock()
-	return mock.GetByIdsFunc(ids)
+	return mock.GetByIdsFunc(contextMoqParam, uUIDs)
 }
 
 // GetByIdsCalls gets all the calls that were made to GetByIds.
 // Check the length with:
 //     len(mockedRepository.GetByIdsCalls())
 func (mock *RepositoryMock) GetByIdsCalls() []struct {
-	Ids []uuid.UUID
+	ContextMoqParam context.Context
+	UUIDs           []uuid.UUID
 } {
 	var calls []struct {
-		Ids []uuid.UUID
+		ContextMoqParam context.Context
+		UUIDs           []uuid.UUID
 	}
 	mock.lockGetByIds.RLock()
 	calls = mock.calls.GetByIds
@@ -275,29 +313,33 @@ func (mock *RepositoryMock) GetByIdsCalls() []struct {
 }
 
 // GetByNames calls GetByNamesFunc.
-func (mock *RepositoryMock) GetByNames(names ...string) ([]Tags, error) {
+func (mock *RepositoryMock) GetByNames(contextMoqParam context.Context, strings ...string) ([]Tags, error) {
 	if mock.GetByNamesFunc == nil {
 		panic("RepositoryMock.GetByNamesFunc: method is nil but Repository.GetByNames was just called")
 	}
 	callInfo := struct {
-		Names []string
+		ContextMoqParam context.Context
+		Strings         []string
 	}{
-		Names: names,
+		ContextMoqParam: contextMoqParam,
+		Strings:         strings,
 	}
 	mock.lockGetByNames.Lock()
 	mock.calls.GetByNames = append(mock.calls.GetByNames, callInfo)
 	mock.lockGetByNames.Unlock()
-	return mock.GetByNamesFunc(names...)
+	return mock.GetByNamesFunc(contextMoqParam, strings...)
 }
 
 // GetByNamesCalls gets all the calls that were made to GetByNames.
 // Check the length with:
 //     len(mockedRepository.GetByNamesCalls())
 func (mock *RepositoryMock) GetByNamesCalls() []struct {
-	Names []string
+	ContextMoqParam context.Context
+	Strings         []string
 } {
 	var calls []struct {
-		Names []string
+		ContextMoqParam context.Context
+		Strings         []string
 	}
 	mock.lockGetByNames.RLock()
 	calls = mock.calls.GetByNames
@@ -306,29 +348,33 @@ func (mock *RepositoryMock) GetByNamesCalls() []struct {
 }
 
 // Save calls SaveFunc.
-func (mock *RepositoryMock) Save(tags Tags) error {
+func (mock *RepositoryMock) Save(contextMoqParam context.Context, tags Tags) error {
 	if mock.SaveFunc == nil {
 		panic("RepositoryMock.SaveFunc: method is nil but Repository.Save was just called")
 	}
 	callInfo := struct {
-		Tags Tags
+		ContextMoqParam context.Context
+		Tags            Tags
 	}{
-		Tags: tags,
+		ContextMoqParam: contextMoqParam,
+		Tags:            tags,
 	}
 	mock.lockSave.Lock()
 	mock.calls.Save = append(mock.calls.Save, callInfo)
 	mock.lockSave.Unlock()
-	return mock.SaveFunc(tags)
+	return mock.SaveFunc(contextMoqParam, tags)
 }
 
 // SaveCalls gets all the calls that were made to Save.
 // Check the length with:
 //     len(mockedRepository.SaveCalls())
 func (mock *RepositoryMock) SaveCalls() []struct {
-	Tags Tags
+	ContextMoqParam context.Context
+	Tags            Tags
 } {
 	var calls []struct {
-		Tags Tags
+		ContextMoqParam context.Context
+		Tags            Tags
 	}
 	mock.lockSave.RLock()
 	calls = mock.calls.Save
@@ -337,29 +383,33 @@ func (mock *RepositoryMock) SaveCalls() []struct {
 }
 
 // Update calls UpdateFunc.
-func (mock *RepositoryMock) Update(tags Tags) error {
+func (mock *RepositoryMock) Update(contextMoqParam context.Context, tags Tags) error {
 	if mock.UpdateFunc == nil {
 		panic("RepositoryMock.UpdateFunc: method is nil but Repository.Update was just called")
 	}
 	callInfo := struct {
-		Tags Tags
+		ContextMoqParam context.Context
+		Tags            Tags
 	}{
-		Tags: tags,
+		ContextMoqParam: contextMoqParam,
+		Tags:            tags,
 	}
 	mock.lockUpdate.Lock()
 	mock.calls.Update = append(mock.calls.Update, callInfo)
 	mock.lockUpdate.Unlock()
-	return mock.UpdateFunc(tags)
+	return mock.UpdateFunc(contextMoqParam, tags)
 }
 
 // UpdateCalls gets all the calls that were made to Update.
 // Check the length with:
 //     len(mockedRepository.UpdateCalls())
 func (mock *RepositoryMock) UpdateCalls() []struct {
-	Tags Tags
+	ContextMoqParam context.Context
+	Tags            Tags
 } {
 	var calls []struct {
-		Tags Tags
+		ContextMoqParam context.Context
+		Tags            Tags
 	}
 	mock.lockUpdate.RLock()
 	calls = mock.calls.Update

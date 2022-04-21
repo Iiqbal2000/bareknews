@@ -1,6 +1,7 @@
 package tagging
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 
@@ -23,7 +24,7 @@ func New(repo tags.Repository) Service {
 	return Service{repo}
 }
 
-func (s Service) Create(tagName string) (Response, error) {
+func (s Service) Create(ctx context.Context, tagName string) (Response, error) {
 	tag := tags.New(tagName)
 
 	err := tag.Validate()
@@ -31,7 +32,7 @@ func (s Service) Create(tagName string) (Response, error) {
 		return Response{}, err
 	}
 
-	err = s.storage.Save(*tag)
+	err = s.storage.Save(ctx, *tag)
 	if err != nil {
 		if err.Error() == bareknews.ErrDataAlreadyExist.Error() {
 			return Response{}, bareknews.ErrDataAlreadyExist
@@ -46,8 +47,8 @@ func (s Service) Create(tagName string) (Response, error) {
 	}, nil
 }
 
-func (s Service) Update(id uuid.UUID, newTagname string) (Response, error) {
-	tag, err := s.storage.GetById(id)
+func (s Service) Update(ctx context.Context, id uuid.UUID, newTagname string) (Response, error) {
+	tag, err := s.storage.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
@@ -63,7 +64,7 @@ func (s Service) Update(id uuid.UUID, newTagname string) (Response, error) {
 		return Response{}, err
 	}
 
-	err = s.storage.Update(*tag)
+	err = s.storage.Update(ctx, *tag)
 	if err != nil {
 		return Response{}, err
 	}
@@ -75,8 +76,8 @@ func (s Service) Update(id uuid.UUID, newTagname string) (Response, error) {
 	}, nil
 }
 
-func (s Service) Delete(id uuid.UUID) error {
-	_, err := s.storage.Count(id)
+func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
+	_, err := s.storage.Count(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return bareknews.ErrDataNotFound
@@ -85,7 +86,7 @@ func (s Service) Delete(id uuid.UUID) error {
 		}
 	}
 
-	err = s.storage.Delete(id)
+	err = s.storage.Delete(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -93,8 +94,8 @@ func (s Service) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (s Service) GetById(id uuid.UUID) (Response, error) {
-	tg, err := s.storage.GetById(id)
+func (s Service) GetById(ctx context.Context, id uuid.UUID) (Response, error) {
+	tg, err := s.storage.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
@@ -110,8 +111,8 @@ func (s Service) GetById(id uuid.UUID) (Response, error) {
 	}, nil
 }
 
-func (s Service) GetByIds(ids []uuid.UUID) ([]Response, error) {
-	tgs, err := s.storage.GetByIds(ids)
+func (s Service) GetByIds(ctx context.Context, ids []uuid.UUID) ([]Response, error) {
+	tgs, err := s.storage.GetByIds(ctx, ids)
 	if err != nil {
 		return []Response{}, bareknews.ErrInternalServer
 	}
@@ -129,8 +130,8 @@ func (s Service) GetByIds(ids []uuid.UUID) ([]Response, error) {
 	return r, nil
 }
 
-func (s Service) GetAll() ([]Response, error) {
-	tg, err := s.storage.GetAll()
+func (s Service) GetAll(ctx context.Context) ([]Response, error) {
+	tg, err := s.storage.GetAll(ctx)
 	if err != nil {
 		return []Response{}, err
 	}
@@ -148,8 +149,8 @@ func (s Service) GetAll() ([]Response, error) {
 	return r, nil
 }
 
-func (s Service) GetByNames(tagsIn []string) []Response {
-	tg, err := s.storage.GetByNames(tagsIn...)
+func (s Service) GetByNames(ctx context.Context, tagsIn []string) []Response {
+	tg, err := s.storage.GetByNames(ctx, tagsIn...)
 	if err != nil {
 		return []Response{}
 	}

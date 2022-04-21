@@ -1,15 +1,19 @@
 package tags
 
-import "github.com/google/uuid"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 //go:generate moq -out tagRepo_moq.go . Repository
 type Repository interface {
-	Save(Tags) error
-	Update(Tags) error
-	Delete(id uuid.UUID) error
-	GetById(id uuid.UUID) (*Tags, error)
-	GetAll() ([]Tags, error)
-	Count(id uuid.UUID) (int, error)
-	GetByNames(names ...string) ([]Tags, error)
-	GetByIds(ids []uuid.UUID) ([]Tags, error)
+	Save(context.Context, Tags) error
+	Update(context.Context, Tags) error
+	Delete(context.Context, uuid.UUID) error
+	GetById(context.Context, uuid.UUID) (*Tags, error)
+	GetAll(context.Context) ([]Tags, error)
+	Count(context.Context, uuid.UUID) (int, error)
+	GetByNames(context.Context, ...string) ([]Tags, error)
+	GetByIds(context.Context, []uuid.UUID) ([]Tags, error)
 }

@@ -47,9 +47,9 @@ func main() {
 	s.ListenAndServe()
 }
 
-func ContentTypeJSON(h http.Handler) http.Handler {
+func ContentTypeJSON(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "application/json;charset=utf8")
-		h.ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 	})
 }

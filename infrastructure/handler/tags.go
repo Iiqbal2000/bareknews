@@ -24,6 +24,8 @@ func (t Tags) Route(r chi.Router) {
 }
 
 func (t Tags) Create(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	type Input struct {
 		Name string `json:"name"`
 	}
@@ -39,7 +41,7 @@ func (t Tags) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tagRes, err := t.Service.Create(payload.Name)
+	tagRes, err := t.Service.Create(ctx, payload.Name)
 	if err != nil {
 		err = bareknews.WriteErrResponse(w, err)
 		if err != nil {
@@ -61,6 +63,7 @@ func (t Tags) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t Tags) GetById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rawId := chi.URLParam(r, "tagId")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
@@ -71,7 +74,7 @@ func (t Tags) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tg, err := t.Service.GetById(id)
+	tg, err := t.Service.GetById(ctx, id)
 	if err != nil {
 		err = bareknews.WriteErrResponse(w, err)
 		if err != nil {
@@ -94,6 +97,7 @@ func (t Tags) GetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t Tags) Update(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rawId := chi.URLParam(r, "tagId")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
@@ -119,7 +123,7 @@ func (t Tags) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tg, err := t.Service.Update(id, payload.Name)
+	tg, err := t.Service.Update(ctx, id, payload.Name)
 	if err != nil {
 		err = bareknews.WriteErrResponse(w, err)
 		if err != nil {
@@ -142,7 +146,8 @@ func (t Tags) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t Tags) GetAll(w http.ResponseWriter, r *http.Request) {
-	tgs, err := t.Service.GetAll()
+	ctx := r.Context()
+	tgs, err := t.Service.GetAll(ctx)
 	if err != nil {
 		err = bareknews.WriteErrResponse(w, err)
 		if err != nil {
@@ -165,6 +170,8 @@ func (t Tags) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t Tags) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	rawId := chi.URLParam(r, "tagId")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
@@ -175,7 +182,7 @@ func (t Tags) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = t.Service.Delete(id)
+	err = t.Service.Delete(ctx, id)
 	if err != nil {
 		err = bareknews.WriteErrResponse(w, err)
 		if err != nil {

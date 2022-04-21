@@ -1,6 +1,7 @@
 package posting
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"strings"
@@ -30,9 +31,9 @@ func New(repo news.Repository, taggingSvc tagging.Service) Service {
 	return Service{repo, taggingSvc}
 }
 
-func (s Service) Create(title, body, status string, tagsIn []string) (Response, error) {
+func (s Service) Create(ctx context.Context, title, body, status string, tagsIn []string) (Response, error) {
 	status = strings.ToLower(status)
-	tg := s.taggingSvc.GetByNames(tagsIn)
+	tg := s.taggingSvc.GetByNames(ctx, tagsIn)
 	tgId := make([]uuid.UUID, 0)
 
 	for _, t := range tg {
@@ -45,7 +46,7 @@ func (s Service) Create(title, body, status string, tagsIn []string) (Response, 
 		return Response{}, err
 	}
 
-	err = s.storage.Save(*news)
+	err = s.storage.Save(ctx, *news)
 	if err != nil {
 		return Response{}, err
 	}
@@ -60,8 +61,8 @@ func (s Service) Create(title, body, status string, tagsIn []string) (Response, 
 	}, nil
 }
 
-func (s Service) Update(id uuid.UUID, title, body, status string, tgIn []string) (Response, error) {
-	news, err := s.storage.GetById(id)
+func (s Service) Update(ctx context.Context, id uuid.UUID, title, body, status string, tgIn []string) (Response, error) {
+	news, err := s.storage.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
@@ -83,7 +84,7 @@ func (s Service) Update(id uuid.UUID, title, body, status string, tgIn []string)
 	}
 
 	if len(tgIn) > 0 {
-		tg := s.taggingSvc.GetByNames(tgIn)
+		tg := s.taggingSvc.GetByNames(ctx, tgIn)
 		tgId := make([]uuid.UUID, 0)
 
 		for _, t := range tg {
@@ -98,12 +99,12 @@ func (s Service) Update(id uuid.UUID, title, body, status string, tgIn []string)
 		return Response{}, err
 	}
 
-	err = s.storage.Update(*news)
+	err = s.storage.Update(ctx, *news)
 	if err != nil {
 		return Response{}, bareknews.ErrInternalServer
 	}
 
-	tg, err := s.taggingSvc.GetByIds(news.TagsID)
+	tg, err := s.taggingSvc.GetByIds(ctx, news.TagsID)
 	if err != nil {
 		return Response{}, err
 	}
@@ -118,8 +119,8 @@ func (s Service) Update(id uuid.UUID, title, body, status string, tgIn []string)
 	}, nil
 }
 
-func (s Service) Delete(id uuid.UUID) error {
-	_, err := s.storage.Count(id)
+func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
+	_, err := s.storage.Count(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return bareknews.ErrDataNotFound
@@ -128,7 +129,7 @@ func (s Service) Delete(id uuid.UUID) error {
 		}
 	}
 
-	err = s.storage.Delete(id)
+	err = s.storage.Delete(ctx, id)
 	if err != nil {
 		return bareknews.ErrInternalServer
 	}
@@ -136,8 +137,8 @@ func (s Service) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (s Service) GetById(id uuid.UUID) (Response, error) {
-	result, err := s.storage.GetById(id)
+func (s Service) GetById(ctx context.Context, id uuid.UUID) (Response, error) {
+	result, err := s.storage.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
@@ -146,7 +147,7 @@ func (s Service) GetById(id uuid.UUID) (Response, error) {
 		}
 	}
 
-	tgs, err := s.taggingSvc.GetByIds(result.TagsID)
+	tgs, err := s.taggingSvc.GetByIds(ctx, result.TagsID)
 	if err != nil {
 		return Response{}, err
 	}
@@ -163,8 +164,8 @@ func (s Service) GetById(id uuid.UUID) (Response, error) {
 	return r, nil
 }
 
-func (s Service) GetAll() ([]Response, error) {
-	nws, err := s.storage.GetAll()
+func (s Service) GetAll(ctx context.Context) ([]Response, error) {
+	nws, err := s.storage.GetAll(ctx)
 	if err != nil {
 		return []Response{}, bareknews.ErrInternalServer
 	}
@@ -172,7 +173,7 @@ func (s Service) GetAll() ([]Response, error) {
 	r := make([]Response, 0)
 
 	for _, nw := range nws {
-		tgs, err := s.taggingSvc.GetByIds(nw.TagsID)
+		tgs, err := s.taggingSvc.GetByIds(ctx, nw.TagsID)
 		if err != nil {
 			return []Response{}, err
 		}
@@ -190,10 +191,10 @@ func (s Service) GetAll() ([]Response, error) {
 	return r, nil
 }
 
-func (s Service) GetAllByTopic(topic string) ([]Response, error) {
-	tg := s.taggingSvc.GetByNames([]string{topic})
+func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]Response, error) {
+	tg := s.taggingSvc.GetByNames(ctx, []string{topic})
 	
-	nws, err := s.storage.GetAllByTopic(tg[0].ID)
+	nws, err := s.storage.GetAllByTopic(ctx, tg[0].ID)
 	if err != nil {
 		return []Response{}, nil
 	}
@@ -201,7 +202,7 @@ func (s Service) GetAllByTopic(topic string) ([]Response, error) {
 	r := make([]Response, 0)
 
 	for _, nw := range nws {
-		tgs, err := s.taggingSvc.GetByIds(nw.TagsID)
+		tgs, err := s.taggingSvc.GetByIds(ctx, nw.TagsID)
 		if err != nil {
 			return []Response{}, err
 		}

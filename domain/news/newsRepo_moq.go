@@ -4,6 +4,7 @@
 package news
 
 import (
+	"context"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -18,25 +19,25 @@ var _ Repository = &RepositoryMock{}
 //
 // 		// make and configure a mocked Repository
 // 		mockedRepository := &RepositoryMock{
-// 			CountFunc: func(id uuid.UUID) (int, error) {
+// 			CountFunc: func(contextMoqParam context.Context, uUID uuid.UUID) (int, error) {
 // 				panic("mock out the Count method")
 // 			},
-// 			DeleteFunc: func(uUID uuid.UUID) error {
+// 			DeleteFunc: func(contextMoqParam context.Context, uUID uuid.UUID) error {
 // 				panic("mock out the Delete method")
 // 			},
-// 			GetAllFunc: func() ([]News, error) {
+// 			GetAllFunc: func(contextMoqParam context.Context) ([]News, error) {
 // 				panic("mock out the GetAll method")
 // 			},
-// 			GetAllByTopicFunc: func(topic uuid.UUID) ([]News, error) {
+// 			GetAllByTopicFunc: func(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error) {
 // 				panic("mock out the GetAllByTopic method")
 // 			},
-// 			GetByIdFunc: func(id uuid.UUID) (*News, error) {
+// 			GetByIdFunc: func(contextMoqParam context.Context, uUID uuid.UUID) (*News, error) {
 // 				panic("mock out the GetById method")
 // 			},
-// 			SaveFunc: func(news News) error {
+// 			SaveFunc: func(contextMoqParam context.Context, news News) error {
 // 				panic("mock out the Save method")
 // 			},
-// 			UpdateFunc: func(news News) error {
+// 			UpdateFunc: func(contextMoqParam context.Context, news News) error {
 // 				panic("mock out the Update method")
 // 			},
 // 		}
@@ -47,58 +48,72 @@ var _ Repository = &RepositoryMock{}
 // 	}
 type RepositoryMock struct {
 	// CountFunc mocks the Count method.
-	CountFunc func(id uuid.UUID) (int, error)
+	CountFunc func(contextMoqParam context.Context, uUID uuid.UUID) (int, error)
 
 	// DeleteFunc mocks the Delete method.
-	DeleteFunc func(uUID uuid.UUID) error
+	DeleteFunc func(contextMoqParam context.Context, uUID uuid.UUID) error
 
 	// GetAllFunc mocks the GetAll method.
-	GetAllFunc func() ([]News, error)
+	GetAllFunc func(contextMoqParam context.Context) ([]News, error)
 
 	// GetAllByTopicFunc mocks the GetAllByTopic method.
-	GetAllByTopicFunc func(topic uuid.UUID) ([]News, error)
+	GetAllByTopicFunc func(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error)
 
 	// GetByIdFunc mocks the GetById method.
-	GetByIdFunc func(id uuid.UUID) (*News, error)
+	GetByIdFunc func(contextMoqParam context.Context, uUID uuid.UUID) (*News, error)
 
 	// SaveFunc mocks the Save method.
-	SaveFunc func(news News) error
+	SaveFunc func(contextMoqParam context.Context, news News) error
 
 	// UpdateFunc mocks the Update method.
-	UpdateFunc func(news News) error
+	UpdateFunc func(contextMoqParam context.Context, news News) error
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Count holds details about calls to the Count method.
 		Count []struct {
-			// ID is the id argument value.
-			ID uuid.UUID
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// UUID is the uUID argument value.
+			UUID uuid.UUID
 		}
 		// Delete holds details about calls to the Delete method.
 		Delete []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 			// UUID is the uUID argument value.
 			UUID uuid.UUID
 		}
 		// GetAll holds details about calls to the GetAll method.
 		GetAll []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 		}
 		// GetAllByTopic holds details about calls to the GetAllByTopic method.
 		GetAllByTopic []struct {
-			// Topic is the topic argument value.
-			Topic uuid.UUID
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// UUID is the uUID argument value.
+			UUID uuid.UUID
 		}
 		// GetById holds details about calls to the GetById method.
 		GetById []struct {
-			// ID is the id argument value.
-			ID uuid.UUID
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// UUID is the uUID argument value.
+			UUID uuid.UUID
 		}
 		// Save holds details about calls to the Save method.
 		Save []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 			// News is the news argument value.
 			News News
 		}
 		// Update holds details about calls to the Update method.
 		Update []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 			// News is the news argument value.
 			News News
 		}
@@ -113,29 +128,33 @@ type RepositoryMock struct {
 }
 
 // Count calls CountFunc.
-func (mock *RepositoryMock) Count(id uuid.UUID) (int, error) {
+func (mock *RepositoryMock) Count(contextMoqParam context.Context, uUID uuid.UUID) (int, error) {
 	if mock.CountFunc == nil {
 		panic("RepositoryMock.CountFunc: method is nil but Repository.Count was just called")
 	}
 	callInfo := struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}{
-		ID: id,
+		ContextMoqParam: contextMoqParam,
+		UUID:            uUID,
 	}
 	mock.lockCount.Lock()
 	mock.calls.Count = append(mock.calls.Count, callInfo)
 	mock.lockCount.Unlock()
-	return mock.CountFunc(id)
+	return mock.CountFunc(contextMoqParam, uUID)
 }
 
 // CountCalls gets all the calls that were made to Count.
 // Check the length with:
 //     len(mockedRepository.CountCalls())
 func (mock *RepositoryMock) CountCalls() []struct {
-	ID uuid.UUID
+	ContextMoqParam context.Context
+	UUID            uuid.UUID
 } {
 	var calls []struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}
 	mock.lockCount.RLock()
 	calls = mock.calls.Count
@@ -144,29 +163,33 @@ func (mock *RepositoryMock) CountCalls() []struct {
 }
 
 // Delete calls DeleteFunc.
-func (mock *RepositoryMock) Delete(uUID uuid.UUID) error {
+func (mock *RepositoryMock) Delete(contextMoqParam context.Context, uUID uuid.UUID) error {
 	if mock.DeleteFunc == nil {
 		panic("RepositoryMock.DeleteFunc: method is nil but Repository.Delete was just called")
 	}
 	callInfo := struct {
-		UUID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}{
-		UUID: uUID,
+		ContextMoqParam: contextMoqParam,
+		UUID:            uUID,
 	}
 	mock.lockDelete.Lock()
 	mock.calls.Delete = append(mock.calls.Delete, callInfo)
 	mock.lockDelete.Unlock()
-	return mock.DeleteFunc(uUID)
+	return mock.DeleteFunc(contextMoqParam, uUID)
 }
 
 // DeleteCalls gets all the calls that were made to Delete.
 // Check the length with:
 //     len(mockedRepository.DeleteCalls())
 func (mock *RepositoryMock) DeleteCalls() []struct {
-	UUID uuid.UUID
+	ContextMoqParam context.Context
+	UUID            uuid.UUID
 } {
 	var calls []struct {
-		UUID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}
 	mock.lockDelete.RLock()
 	calls = mock.calls.Delete
@@ -175,24 +198,29 @@ func (mock *RepositoryMock) DeleteCalls() []struct {
 }
 
 // GetAll calls GetAllFunc.
-func (mock *RepositoryMock) GetAll() ([]News, error) {
+func (mock *RepositoryMock) GetAll(contextMoqParam context.Context) ([]News, error) {
 	if mock.GetAllFunc == nil {
 		panic("RepositoryMock.GetAllFunc: method is nil but Repository.GetAll was just called")
 	}
 	callInfo := struct {
-	}{}
+		ContextMoqParam context.Context
+	}{
+		ContextMoqParam: contextMoqParam,
+	}
 	mock.lockGetAll.Lock()
 	mock.calls.GetAll = append(mock.calls.GetAll, callInfo)
 	mock.lockGetAll.Unlock()
-	return mock.GetAllFunc()
+	return mock.GetAllFunc(contextMoqParam)
 }
 
 // GetAllCalls gets all the calls that were made to GetAll.
 // Check the length with:
 //     len(mockedRepository.GetAllCalls())
 func (mock *RepositoryMock) GetAllCalls() []struct {
+	ContextMoqParam context.Context
 } {
 	var calls []struct {
+		ContextMoqParam context.Context
 	}
 	mock.lockGetAll.RLock()
 	calls = mock.calls.GetAll
@@ -201,29 +229,33 @@ func (mock *RepositoryMock) GetAllCalls() []struct {
 }
 
 // GetAllByTopic calls GetAllByTopicFunc.
-func (mock *RepositoryMock) GetAllByTopic(topic uuid.UUID) ([]News, error) {
+func (mock *RepositoryMock) GetAllByTopic(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error) {
 	if mock.GetAllByTopicFunc == nil {
 		panic("RepositoryMock.GetAllByTopicFunc: method is nil but Repository.GetAllByTopic was just called")
 	}
 	callInfo := struct {
-		Topic uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}{
-		Topic: topic,
+		ContextMoqParam: contextMoqParam,
+		UUID:            uUID,
 	}
 	mock.lockGetAllByTopic.Lock()
 	mock.calls.GetAllByTopic = append(mock.calls.GetAllByTopic, callInfo)
 	mock.lockGetAllByTopic.Unlock()
-	return mock.GetAllByTopicFunc(topic)
+	return mock.GetAllByTopicFunc(contextMoqParam, uUID)
 }
 
 // GetAllByTopicCalls gets all the calls that were made to GetAllByTopic.
 // Check the length with:
 //     len(mockedRepository.GetAllByTopicCalls())
 func (mock *RepositoryMock) GetAllByTopicCalls() []struct {
-	Topic uuid.UUID
+	ContextMoqParam context.Context
+	UUID            uuid.UUID
 } {
 	var calls []struct {
-		Topic uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}
 	mock.lockGetAllByTopic.RLock()
 	calls = mock.calls.GetAllByTopic
@@ -232,29 +264,33 @@ func (mock *RepositoryMock) GetAllByTopicCalls() []struct {
 }
 
 // GetById calls GetByIdFunc.
-func (mock *RepositoryMock) GetById(id uuid.UUID) (*News, error) {
+func (mock *RepositoryMock) GetById(contextMoqParam context.Context, uUID uuid.UUID) (*News, error) {
 	if mock.GetByIdFunc == nil {
 		panic("RepositoryMock.GetByIdFunc: method is nil but Repository.GetById was just called")
 	}
 	callInfo := struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}{
-		ID: id,
+		ContextMoqParam: contextMoqParam,
+		UUID:            uUID,
 	}
 	mock.lockGetById.Lock()
 	mock.calls.GetById = append(mock.calls.GetById, callInfo)
 	mock.lockGetById.Unlock()
-	return mock.GetByIdFunc(id)
+	return mock.GetByIdFunc(contextMoqParam, uUID)
 }
 
 // GetByIdCalls gets all the calls that were made to GetById.
 // Check the length with:
 //     len(mockedRepository.GetByIdCalls())
 func (mock *RepositoryMock) GetByIdCalls() []struct {
-	ID uuid.UUID
+	ContextMoqParam context.Context
+	UUID            uuid.UUID
 } {
 	var calls []struct {
-		ID uuid.UUID
+		ContextMoqParam context.Context
+		UUID            uuid.UUID
 	}
 	mock.lockGetById.RLock()
 	calls = mock.calls.GetById
@@ -263,29 +299,33 @@ func (mock *RepositoryMock) GetByIdCalls() []struct {
 }
 
 // Save calls SaveFunc.
-func (mock *RepositoryMock) Save(news News) error {
+func (mock *RepositoryMock) Save(contextMoqParam context.Context, news News) error {
 	if mock.SaveFunc == nil {
 		panic("RepositoryMock.SaveFunc: method is nil but Repository.Save was just called")
 	}
 	callInfo := struct {
-		News News
+		ContextMoqParam context.Context
+		News            News
 	}{
-		News: news,
+		ContextMoqParam: contextMoqParam,
+		News:            news,
 	}
 	mock.lockSave.Lock()
 	mock.calls.Save = append(mock.calls.Save, callInfo)
 	mock.lockSave.Unlock()
-	return mock.SaveFunc(news)
+	return mock.SaveFunc(contextMoqParam, news)
 }
 
 // SaveCalls gets all the calls that were made to Save.
 // Check the length with:
 //     len(mockedRepository.SaveCalls())
 func (mock *RepositoryMock) SaveCalls() []struct {
-	News News
+	ContextMoqParam context.Context
+	News            News
 } {
 	var calls []struct {
-		News News
+		ContextMoqParam context.Context
+		News            News
 	}
 	mock.lockSave.RLock()
 	calls = mock.calls.Save
@@ -294,29 +334,33 @@ func (mock *RepositoryMock) SaveCalls() []struct {
 }
 
 // Update calls UpdateFunc.
-func (mock *RepositoryMock) Update(news News) error {
+func (mock *RepositoryMock) Update(contextMoqParam context.Context, news News) error {
 	if mock.UpdateFunc == nil {
 		panic("RepositoryMock.UpdateFunc: method is nil but Repository.Update was just called")
 	}
 	callInfo := struct {
-		News News
+		ContextMoqParam context.Context
+		News            News
 	}{
-		News: news,
+		ContextMoqParam: contextMoqParam,
+		News:            news,
 	}
 	mock.lockUpdate.Lock()
 	mock.calls.Update = append(mock.calls.Update, callInfo)
 	mock.lockUpdate.Unlock()
-	return mock.UpdateFunc(news)
+	return mock.UpdateFunc(contextMoqParam, news)
 }
 
 // UpdateCalls gets all the calls that were made to Update.
 // Check the length with:
 //     len(mockedRepository.UpdateCalls())
 func (mock *RepositoryMock) UpdateCalls() []struct {
-	News News
+	ContextMoqParam context.Context
+	News            News
 } {
 	var calls []struct {
-		News News
+		ContextMoqParam context.Context
+		News            News
 	}
 	mock.lockUpdate.RLock()
 	calls = mock.calls.Update

@@ -31,6 +31,8 @@ func (n News) Route(r chi.Router) {
 }
 
 func (n News) Create(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	payloadIn := NewsInput{}
 
 	err := json.NewDecoder(r.Body).Decode(&payloadIn)
@@ -42,7 +44,7 @@ func (n News) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nws, err := n.Service.Create(payloadIn.Title, payloadIn.Body, payloadIn.Status, payloadIn.Tags)
+	nws, err := n.Service.Create(ctx, payloadIn.Title, payloadIn.Body, payloadIn.Status, payloadIn.Tags)
 	if err != nil {
 		err = bareknews.WriteErrResponse(w, err)
 		if err != nil {
@@ -64,6 +66,7 @@ func (n News) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (n News) GetById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
 	if err != nil {
@@ -74,7 +77,7 @@ func (n News) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nws, err := n.Service.GetById(id)
+	nws, err := n.Service.GetById(ctx, id)
 	if err != nil {
 		err = bareknews.WriteErrResponse(w, err)
 		if err != nil {
@@ -96,6 +99,7 @@ func (n News) GetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (n News) Update(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
 	if err != nil {
@@ -117,7 +121,7 @@ func (n News) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nws, err := n.Service.Update(
+	nws, err := n.Service.Update(ctx,
 		id,
 		payloadIn.Title,
 		payloadIn.Body,
@@ -146,6 +150,7 @@ func (n News) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (n News) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
 	if err != nil {
@@ -156,7 +161,7 @@ func (n News) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = n.Service.Delete(id)
+	err = n.Service.Delete(ctx, id)
 	if err != nil {
 		err = bareknews.WriteErrResponse(w, err)
 		if err != nil {
@@ -178,13 +183,14 @@ func (n News) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	q := r.URL.Query()
 	topic := q.Get("topic")
-	
+
 	newsRes := make([]posting.Response, 0)
 
 	if topic != "" {
-		nws, err := n.Service.GetAllByTopic(topic)
+		nws, err := n.Service.GetAllByTopic(ctx, topic)
 		if err != nil {
 			err = bareknews.WriteErrResponse(w, err)
 			if err != nil {
@@ -195,7 +201,7 @@ func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
 
 		newsRes = append(newsRes, nws...)
 	} else {
-		nws, err := n.Service.GetAll()
+		nws, err := n.Service.GetAll(ctx)
 		if err != nil {
 			err = bareknews.WriteErrResponse(w, err)
 			if err != nil {

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Iiqbal2000/bareknews/domain"
@@ -9,10 +10,8 @@ import (
 	"github.com/matryer/is"
 )
 
-const dbfile = "./../../bareknews.db"
-
 func TestSaveNews(t *testing.T) {
-	conn := Run(dbfile, true)
+	conn := Run(":memory:", true)
 	newsStore := News{conn}
 	is := is.New(t)
 
@@ -22,10 +21,10 @@ func TestSaveNews(t *testing.T) {
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
 	want := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
-	err := newsStore.Save(*want)
+	err := newsStore.Save(context.TODO(), *want)
 	is.NoErr(err)
 
-	got, err := newsStore.GetById(want.Post.ID)
+	got, err := newsStore.GetById(context.TODO(), want.Post.ID)
 	is.NoErr(err)
 	is.True(got != nil)
 	is.Equal(got.Post.Title, want.Post.Title)
@@ -35,7 +34,7 @@ func TestSaveNews(t *testing.T) {
 }
 
 func TestUpdateNews(t *testing.T) {
-	conn := Run(dbfile, true)
+	conn := Run(":memory:", true)
 	newsStore := News{conn}
 	is := is.New(t)
 	tgId := uuid.New()
@@ -44,7 +43,7 @@ func TestUpdateNews(t *testing.T) {
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
 	news := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
-	err := newsStore.Save(*news)
+	err := newsStore.Save(context.TODO(), *news)
 	is.NoErr(err)
 
 	wantTitle := "news 2"
@@ -53,10 +52,10 @@ func TestUpdateNews(t *testing.T) {
 	news.ChangeTitle(wantTitle)
 	news.ChangeStatus(wantStatus)
 
-	err = newsStore.Update(*news)
+	err = newsStore.Update(context.TODO(), *news)
 	is.NoErr(err)
 
-	got, err := newsStore.GetById(news.Post.ID)
+	got, err := newsStore.GetById(context.TODO(), news.Post.ID)
 	is.NoErr(err)
 	is.True(got != nil)
 	is.Equal(got.Post.Title, wantTitle)
@@ -64,7 +63,7 @@ func TestUpdateNews(t *testing.T) {
 }
 
 func TestDeleteNews(t *testing.T) {
-	conn := Run(dbfile, true)
+	conn := Run(":memory:", true)
 	newsStore := News{conn}
 	is := is.New(t)
 
@@ -74,18 +73,18 @@ func TestDeleteNews(t *testing.T) {
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
 	news := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
-	err := newsStore.Save(*news)
+	err := newsStore.Save(context.TODO(), *news)
 	is.NoErr(err)
 
-	err = newsStore.Delete(news.Post.ID)
+	err = newsStore.Delete(context.TODO(), news.Post.ID)
 	is.NoErr(err)
 
-	_, err = newsStore.GetById(news.Post.ID)
+	_, err = newsStore.GetById(context.TODO(), news.Post.ID)
 	is.True(err != nil)
 }
 
 func TestGetByID(t *testing.T) {
-	conn := Run(dbfile, true)
+	conn := Run(":memory:", true)
 	newsStore := News{conn}
 	is := is.New(t)
 
@@ -95,10 +94,10 @@ func TestGetByID(t *testing.T) {
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
 	want := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
-	err := newsStore.Save(*want)
+	err := newsStore.Save(context.TODO(), *want)
 	is.NoErr(err)
 
-	got, err := newsStore.GetById(want.Post.ID)
+	got, err := newsStore.GetById(context.TODO(), want.Post.ID)
 
 	is.NoErr(err)
 	is.True(got != nil)
@@ -110,7 +109,7 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestGetAllNews(t *testing.T) {
-	conn := Run(dbfile, true)
+	conn := Run(":memory:", true)
 	newsStore := News{conn}
 
 	tgId := uuid.New()
@@ -119,7 +118,7 @@ func TestGetAllNews(t *testing.T) {
 	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
 
 	wantNews1 := news.New(title1, body1, domain.Draft, []uuid.UUID{tgId})
-	err := newsStore.Save(*wantNews1)
+	err := newsStore.Save(context.TODO(), *wantNews1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -128,12 +127,12 @@ func TestGetAllNews(t *testing.T) {
 	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
 
 	wantNews2 := news.New(title2, body2, domain.Draft, []uuid.UUID{tgId})
-	err = newsStore.Save(*wantNews2)
+	err = newsStore.Save(context.TODO(), *wantNews2)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	got, err := newsStore.GetAll()
+	got, err := newsStore.GetAll(context.TODO())
 	is := is.New(t)
 	is.NoErr(err)
 	is.Equal(len(got), 2)
@@ -152,7 +151,7 @@ func TestGetAllNews(t *testing.T) {
 }
 
 func TestGetAllByTopic(t *testing.T) {
-	conn := Run(dbfile, true)
+	conn := Run(":memory:", true)
 	newsStore := News{conn}
 
 	tgId := uuid.New()
@@ -161,7 +160,7 @@ func TestGetAllByTopic(t *testing.T) {
 	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
 
 	wantNews1 := news.New(title1, body1, domain.Draft, []uuid.UUID{tgId})
-	err := newsStore.Save(*wantNews1)
+	err := newsStore.Save(context.TODO(), *wantNews1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -170,12 +169,12 @@ func TestGetAllByTopic(t *testing.T) {
 	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
 
 	wantNews2 := news.New(title2, body2, domain.Draft, []uuid.UUID{tgId})
-	err = newsStore.Save(*wantNews2)
+	err = newsStore.Save(context.TODO(), *wantNews2)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	got, err := newsStore.GetAllByTopic(tgId)
+	got, err := newsStore.GetAllByTopic(context.TODO(), tgId)
 	is := is.New(t)
 	is.NoErr(err)
 	is.Equal(len(got), 2)

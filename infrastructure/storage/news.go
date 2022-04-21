@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/Iiqbal2000/bareknews"
@@ -16,8 +17,8 @@ type News struct {
 	Conn *sql.DB
 }
 
-func (s News) Save(n news.News) error {
-	tx, err := s.Conn.Begin()
+func (s News) Save(ctx context.Context, n news.News) error {
+	tx, err := s.Conn.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "storage.news.save")
 	}
@@ -58,14 +59,14 @@ func (s News) Save(n news.News) error {
 	return nil
 }
 
-func (s News) GetById(id uuid.UUID) (*news.News, error) {
+func (s News) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select("id", "title", "status", "body", "slug")
 	builder.From("news")
 	builder.Where(builder.Equal("id", id))
 
 	query, args := builder.Build()
-	row := s.Conn.QueryRow(query, args...)
+	row := s.Conn.QueryRowContext(ctx, query, args...)
 	post := domain.Post{}
 	slug := new(domain.Slug)
 	status := new(domain.Status)
@@ -78,7 +79,7 @@ func (s News) GetById(id uuid.UUID) (*news.News, error) {
 		}
 	}
 
-	tagsResult, err := s.getTags(post.ID)
+	tagsResult, err := s.getTags(ctx, post.ID)
 	if err != nil {
 		return &news.News{}, err
 	}
@@ -92,8 +93,8 @@ func (s News) GetById(id uuid.UUID) (*news.News, error) {
 	return result, nil
 }
 
-func (s News) Update(n news.News) error {
-	tx, err := s.Conn.Begin()
+func (s News) Update(ctx context.Context, n news.News) error {
+	tx, err := s.Conn.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "storage.news.update")
 	}
@@ -135,8 +136,8 @@ func (s News) Update(n news.News) error {
 	return nil
 }
 
-func (s News) Delete(id uuid.UUID) error {
-	tx, err := s.Conn.Begin()
+func (s News) Delete(ctx context.Context, id uuid.UUID) error {
+	tx, err := s.Conn.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "storage.news.delete")
 	}
@@ -163,13 +164,13 @@ func (s News) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (s News) Count(id uuid.UUID) (int, error) {
+func (s News) Count(ctx context.Context, id uuid.UUID) (int, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select(builder.As("COUNT(id)", "c"))
 	builder.From("news")
 	builder.Where(builder.Equal("id", id))
 	query, args := builder.Build()
-	row := s.Conn.QueryRow(query, args...)
+	row := s.Conn.QueryRowContext(ctx, query, args...)
 
 	var c int
 	err := row.Scan(&c)
@@ -184,12 +185,12 @@ func (s News) Count(id uuid.UUID) (int, error) {
 	return c, nil
 }
 
-func (s News) GetAll() ([]news.News, error) {
+func (s News) GetAll(ctx context.Context) ([]news.News, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select("id", "title", "status", "body", "slug")
 	builder.From("news")
 	query, args := builder.Build()
-	rows, err := s.Conn.Query(query, args...)
+	rows, err := s.Conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return []news.News{}, errors.Wrap(err, "storage.news.getAll")
 	}
@@ -206,7 +207,7 @@ func (s News) GetAll() ([]news.News, error) {
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "storage.news.getAll")
 		}
-		tagsResult, err := s.getTags(post.ID)
+		tagsResult, err := s.getTags(ctx, post.ID)
 		if err != nil {
 			return []news.News{}, err
 		}
@@ -225,8 +226,8 @@ func (s News) GetAll() ([]news.News, error) {
 	return newsResults, nil
 }
 
-func (s News) GetAllByTopic(topic uuid.UUID) ([]news.News, error) {
-	newsID, err := s.getNewsIds(topic)
+func (s News) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News, error) {
+	newsID, err := s.getNewsIds(ctx, topic)
 	if err != nil {
 		return []news.News{}, err
 	}
@@ -244,7 +245,7 @@ func (s News) GetAllByTopic(topic uuid.UUID) ([]news.News, error) {
 	builder.Where(builder.In("id", newsIdMark))
 	newsQuery, newsArgs := builder.Build()
 
-	newsRows, err := s.Conn.Query(newsQuery, newsArgs...)
+	newsRows, err := s.Conn.QueryContext(ctx, newsQuery, newsArgs...)
 	if err != nil {
 		return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
 	}
@@ -261,7 +262,7 @@ func (s News) GetAllByTopic(topic uuid.UUID) ([]news.News, error) {
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
 		}
-		tagsResult, err := s.getTags(post.ID)
+		tagsResult, err := s.getTags(ctx, post.ID)
 		if err != nil {
 			return []news.News{}, err
 		}
@@ -280,14 +281,14 @@ func (s News) GetAllByTopic(topic uuid.UUID) ([]news.News, error) {
 	return newsResult, nil
 }
 
-func (s News) getNewsIds(tagsID uuid.UUID) ([]uuid.UUID, error) {
+func (s News) getNewsIds(ctx context.Context, tagsID uuid.UUID) ([]uuid.UUID, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Distinct()
 	builder.Select("newsID")
 	builder.From("news_tags")
 	builder.Where(builder.Equal("tagsID", tagsID))
 	query, args := builder.Build()
-	rows, err := s.Conn.Query(query, args...)
+	rows, err := s.Conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return []uuid.UUID{}, errors.Wrap(err, "storage.news.getNewsIds")
 	}
@@ -348,14 +349,14 @@ func (s News) deleteTags(tx *sql.Tx, id uuid.UUID) error {
 	return nil
 }
 
-func (s News) getTags(newsId uuid.UUID) ([]uuid.UUID, error) {
+func (s News) getTags(ctx context.Context,newsId uuid.UUID) ([]uuid.UUID, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Distinct()
 	builder.Select("tagsID")
 	builder.From("news_tags")
 	builder.Where(builder.Equal("newsID", newsId))
 	query, args := builder.Build()
-	rows, err := s.Conn.Query(query, args...)
+	rows, err := s.Conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return []uuid.UUID{}, errors.Wrap(err, "storage.news.getTagsReference")
 	}
