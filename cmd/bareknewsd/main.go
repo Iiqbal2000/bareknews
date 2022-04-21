@@ -5,15 +5,30 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/Iiqbal2000/bareknews/docs"
 	"github.com/Iiqbal2000/bareknews/infrastructure/handler"
 	"github.com/Iiqbal2000/bareknews/infrastructure/storage"
 	"github.com/Iiqbal2000/bareknews/services/posting"
 	"github.com/Iiqbal2000/bareknews/services/tagging"
 	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 const dbfile = "./bareknews.db"
 
+// @title Bareknews API
+// @version 1.0
+// @description This is a sample server Bareknews server.
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:3333
+// @BasePath /api
 func main() {
 	r := chi.NewRouter()
 
@@ -29,8 +44,14 @@ func main() {
 
 	r.Use(ContentTypeJSON)
 
-	r.Route("/tags", tagHandler.Route)
-	r.Route("/news", newsHandler.Route)
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:3333/swagger/doc.json"),
+	))
+	
+	r.Route("/api", func(r chi.Router) {
+		r.Route("/tags", tagHandler.Route)
+		r.Route("/news", newsHandler.Route)
+	})
 
 	address := ":3333"
 
