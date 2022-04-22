@@ -5,6 +5,7 @@ package news
 
 import (
 	"context"
+	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -27,6 +28,9 @@ var _ Repository = &RepositoryMock{}
 // 			},
 // 			GetAllFunc: func(contextMoqParam context.Context) ([]News, error) {
 // 				panic("mock out the GetAll method")
+// 			},
+// 			GetAllByStatusFunc: func(ctx context.Context, status domain.Status) ([]News, error) {
+// 				panic("mock out the GetAllByStatus method")
 // 			},
 // 			GetAllByTopicFunc: func(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error) {
 // 				panic("mock out the GetAllByTopic method")
@@ -55,6 +59,9 @@ type RepositoryMock struct {
 
 	// GetAllFunc mocks the GetAll method.
 	GetAllFunc func(contextMoqParam context.Context) ([]News, error)
+
+	// GetAllByStatusFunc mocks the GetAllByStatus method.
+	GetAllByStatusFunc func(ctx context.Context, status domain.Status) ([]News, error)
 
 	// GetAllByTopicFunc mocks the GetAllByTopic method.
 	GetAllByTopicFunc func(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error)
@@ -89,6 +96,13 @@ type RepositoryMock struct {
 			// ContextMoqParam is the contextMoqParam argument value.
 			ContextMoqParam context.Context
 		}
+		// GetAllByStatus holds details about calls to the GetAllByStatus method.
+		GetAllByStatus []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Status is the status argument value.
+			Status domain.Status
+		}
 		// GetAllByTopic holds details about calls to the GetAllByTopic method.
 		GetAllByTopic []struct {
 			// ContextMoqParam is the contextMoqParam argument value.
@@ -118,13 +132,14 @@ type RepositoryMock struct {
 			News News
 		}
 	}
-	lockCount         sync.RWMutex
-	lockDelete        sync.RWMutex
-	lockGetAll        sync.RWMutex
-	lockGetAllByTopic sync.RWMutex
-	lockGetById       sync.RWMutex
-	lockSave          sync.RWMutex
-	lockUpdate        sync.RWMutex
+	lockCount          sync.RWMutex
+	lockDelete         sync.RWMutex
+	lockGetAll         sync.RWMutex
+	lockGetAllByStatus sync.RWMutex
+	lockGetAllByTopic  sync.RWMutex
+	lockGetById        sync.RWMutex
+	lockSave           sync.RWMutex
+	lockUpdate         sync.RWMutex
 }
 
 // Count calls CountFunc.
@@ -225,6 +240,41 @@ func (mock *RepositoryMock) GetAllCalls() []struct {
 	mock.lockGetAll.RLock()
 	calls = mock.calls.GetAll
 	mock.lockGetAll.RUnlock()
+	return calls
+}
+
+// GetAllByStatus calls GetAllByStatusFunc.
+func (mock *RepositoryMock) GetAllByStatus(ctx context.Context, status domain.Status) ([]News, error) {
+	if mock.GetAllByStatusFunc == nil {
+		panic("RepositoryMock.GetAllByStatusFunc: method is nil but Repository.GetAllByStatus was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		Status domain.Status
+	}{
+		Ctx:    ctx,
+		Status: status,
+	}
+	mock.lockGetAllByStatus.Lock()
+	mock.calls.GetAllByStatus = append(mock.calls.GetAllByStatus, callInfo)
+	mock.lockGetAllByStatus.Unlock()
+	return mock.GetAllByStatusFunc(ctx, status)
+}
+
+// GetAllByStatusCalls gets all the calls that were made to GetAllByStatus.
+// Check the length with:
+//     len(mockedRepository.GetAllByStatusCalls())
+func (mock *RepositoryMock) GetAllByStatusCalls() []struct {
+	Ctx    context.Context
+	Status domain.Status
+} {
+	var calls []struct {
+		Ctx    context.Context
+		Status domain.Status
+	}
+	mock.lockGetAllByStatus.RLock()
+	calls = mock.calls.GetAllByStatus
+	mock.lockGetAllByStatus.RUnlock()
 	return calls
 }
 

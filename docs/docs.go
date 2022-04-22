@@ -43,6 +43,12 @@ const docTemplate = `{
                         "description": "a topic",
                         "name": "topic",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "status of news that has values ",
+                        "name": "status",
+                        "in": "query"
                     }
                 ],
                 "responses": {

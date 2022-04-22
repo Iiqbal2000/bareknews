@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
+	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/Iiqbal2000/bareknews/domain/news"
 	"github.com/Iiqbal2000/bareknews/domain/tags"
 	"github.com/Iiqbal2000/bareknews/services/posting"
@@ -122,14 +123,14 @@ func TestDelete(t *testing.T) {
 				return nil
 			},
 		}
-	
+
 		is := is.New(t)
-	
+
 		svc := posting.New(store, tagging.New(&tags.RepositoryMock{}))
 		payload := news.New("news title", "news body", "draft", []uuid.UUID{uuid.New()})
 		err := svc.Delete(context.TODO(), payload.Post.ID)
 		is.NoErr(err)
-	
+
 		is.Equal(len(store.CountCalls()), 1)
 		is.Equal(len(store.DeleteCalls()), 1)
 	})
@@ -143,9 +144,9 @@ func TestDelete(t *testing.T) {
 				return nil
 			},
 		}
-	
+
 		is := is.New(t)
-	
+
 		svc := posting.New(store, tagging.New(&tags.RepositoryMock{}))
 		err := svc.Delete(context.TODO(), uuid.New())
 		is.True(err != nil)
@@ -153,4 +154,28 @@ func TestDelete(t *testing.T) {
 		is.Equal(len(store.CountCalls()), 1)
 		is.Equal(len(store.DeleteCalls()), 0)
 	})
+}
+
+func TestGetAllByStatus(t *testing.T) {
+	nwsStore := &news.RepositoryMock{
+		GetAllByStatusFunc: func(ctx context.Context, status domain.Status) ([]news.News, error) {
+			return nil, nil
+		},
+	}
+	tgStore := &tags.RepositoryMock{}
+
+	nwsSvc := posting.New(nwsStore, tagging.New(tgStore))
+
+	is := is.New(t)
+	_, err := nwsSvc.GetAllByStatus(context.TODO(), "draft")
+	is.NoErr(err)
+
+	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publish")
+	is.NoErr(err)
+
+	_, err = nwsSvc.GetAllByStatus(context.TODO(), "")
+	is.True(err != nil)
+
+	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publsjsja")
+	is.True(err != nil)
 }

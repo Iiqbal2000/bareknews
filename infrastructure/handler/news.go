@@ -67,7 +67,7 @@ func (n News) Create(w http.ResponseWriter, r *http.Request) {
 
 	payloadRes := bareknews.RespBody{
 		Message: "Successfully creating a news",
-		Data: nws,
+		Data:    nws,
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -111,7 +111,7 @@ func (n News) GetById(w http.ResponseWriter, r *http.Request) {
 
 	payloadRes := bareknews.RespBody{
 		Message: "Successfully getting a news",
-		Data: nws,
+		Data:    nws,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -175,7 +175,7 @@ func (n News) Update(w http.ResponseWriter, r *http.Request) {
 
 	payloadRes := bareknews.RespBody{
 		Message: "Successfully updating a news",
-		Data: nws,
+		Data:    nws,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -236,6 +236,7 @@ func (n News) Delete(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param   topic      query     string     false  "a topic"
+// @Param   status      query     string     false  "status of news that has values "draft" or "publish""
 // @Success      200  {object}  bareknews.RespBody{data=[]posting.Response} "Array of news body"
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /news [get]
@@ -243,10 +244,38 @@ func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	q := r.URL.Query()
 	topic := q.Get("topic")
+	status := q.Get("status")
 
 	newsRes := make([]posting.Response, 0)
 
-	if topic != "" {
+	switch {
+	case topic != "" && status != "":
+		nws, err := n.Service.GetAllByTopic(ctx, topic)
+		if err != nil {
+			err = bareknews.WriteErrResponse(w, err)
+			if err != nil {
+				log.Println("(error) news.handler.getAll: ", err.Error())
+			}
+			return
+		}
+
+		for _, n := range nws {
+			if n.Status == status {
+				newsRes = append(newsRes, n)
+			}
+		}
+	case topic == "" && status != "":
+		nws, err := n.Service.GetAllByStatus(ctx, status)
+		if err != nil {
+			err = bareknews.WriteErrResponse(w, err)
+			if err != nil {
+				log.Println("(error) news.handler.getAll: ", err.Error())
+			}
+			return
+		}
+
+		newsRes = append(newsRes, nws...)
+	case topic != "" && status == "":
 		nws, err := n.Service.GetAllByTopic(ctx, topic)
 		if err != nil {
 			err = bareknews.WriteErrResponse(w, err)
@@ -257,7 +286,7 @@ func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
 		}
 
 		newsRes = append(newsRes, nws...)
-	} else {
+	default:
 		nws, err := n.Service.GetAll(ctx)
 		if err != nil {
 			err = bareknews.WriteErrResponse(w, err)
@@ -272,7 +301,7 @@ func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	payloadRes := bareknews.RespBody{
 		Message: "Successfuly getting all news",
-		Data: newsRes,
+		Data:    newsRes,
 	}
 
 	w.WriteHeader(http.StatusOK)

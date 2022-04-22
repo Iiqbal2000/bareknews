@@ -67,7 +67,7 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, title, body, status s
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
 		} else {
-			return Response{}, bareknews.ErrInternalServer
+			return Response{}, err
 		}
 	}
 
@@ -101,7 +101,7 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, title, body, status s
 
 	err = s.storage.Update(ctx, *news)
 	if err != nil {
-		return Response{}, bareknews.ErrInternalServer
+		return Response{}, err
 	}
 
 	tg, err := s.taggingSvc.GetByIds(ctx, news.TagsID)
@@ -125,13 +125,13 @@ func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
 		if errors.Is(err, sql.ErrNoRows) {
 			return bareknews.ErrDataNotFound
 		} else {
-			return bareknews.ErrInternalServer
+			return err
 		}
 	}
 
 	err = s.storage.Delete(ctx, id)
 	if err != nil {
-		return bareknews.ErrInternalServer
+		return err
 	}
 
 	return nil
@@ -143,7 +143,7 @@ func (s Service) GetById(ctx context.Context, id uuid.UUID) (Response, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
 		} else {
-			return Response{}, bareknews.ErrInternalServer
+			return Response{}, err
 		}
 	}
 
@@ -167,7 +167,7 @@ func (s Service) GetById(ctx context.Context, id uuid.UUID) (Response, error) {
 func (s Service) GetAll(ctx context.Context) ([]Response, error) {
 	nws, err := s.storage.GetAll(ctx)
 	if err != nil {
-		return []Response{}, bareknews.ErrInternalServer
+		return []Response{}, err
 	}
 
 	r := make([]Response, 0)
@@ -196,7 +196,40 @@ func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]Response, e
 	
 	nws, err := s.storage.GetAllByTopic(ctx, tg[0].ID)
 	if err != nil {
-		return []Response{}, nil
+		return []Response{}, err
+	}
+
+	r := make([]Response, 0)
+
+	for _, nw := range nws {
+		tgs, err := s.taggingSvc.GetByIds(ctx, nw.TagsID)
+		if err != nil {
+			return []Response{}, err
+		}
+
+		r = append(r, Response{
+			ID:     nw.Post.ID,
+			Title:  nw.Post.Title,
+			Body:   nw.Post.Body,
+			Status: nw.Status.String(),
+			Slug:   nw.Slug.String(),
+			Tags:   tgs,
+		})
+	}
+
+	return r, nil
+}
+
+func (s Service) GetAllByStatus(ctx context.Context, status string) ([]Response, error) {
+	stat := domain.Status(status)
+	err := stat.Validate()
+	if err != nil {
+		return []Response{}, err
+	}
+
+	nws, err := s.storage.GetAllByStatus(ctx, stat)
+	if err != nil {
+		return []Response{}, err
 	}
 
 	r := make([]Response, 0)

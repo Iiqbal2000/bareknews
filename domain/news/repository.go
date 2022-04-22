@@ -3,6 +3,7 @@ package news
 import (
 	"context"
 
+	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/google/uuid"
 )
 
@@ -12,6 +13,7 @@ type Repository interface {
 	GetAll(context.Context) ([]News, error)
 	GetById(context.Context, uuid.UUID) (*News, error)
 	GetAllByTopic(context.Context, uuid.UUID) ([]News, error)
+	GetAllByStatus(ctx context.Context, status domain.Status) ([]News, error)
 	Count(context.Context, uuid.UUID) (int, error)
 	Update(context.Context, News) error
 	Delete(context.Context, uuid.UUID) error

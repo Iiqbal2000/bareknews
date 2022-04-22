@@ -87,6 +87,10 @@ paths:
         in: query
         name: topic
         type: string
+      - description: 'status of news that has values '
+        in: query
+        name: status
+        type: string
       produces:
       - application/json
       responses:
