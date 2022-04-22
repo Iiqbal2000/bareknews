@@ -1170,8 +1170,7 @@ const docTemplate = `{
                     "default": "draft",
                     "enum": [
                         "publish",
-                        "draft",
-                        "deleted"
+                        "draft"
                     ]
                 },
                 "tags": {

@@ -20,7 +20,6 @@ definitions:
         enum:
         - publish
         - draft
-        - deleted
         type: string
       tags:
         items:
