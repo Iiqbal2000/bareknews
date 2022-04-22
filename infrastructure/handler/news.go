@@ -17,7 +17,7 @@ type News struct {
 
 type InputNews struct {
 	Title  string   `json:"title" validate:"required"`
-	Status string   `json:"status" enums:"publish,draft,deleted" default:"draft"`
+	Status string   `json:"status" enums:"publish,draft" default:"draft"`
 	Tags   []string `json:"tags"`
 	Body   string   `json:"body" validate:"required"`
 }

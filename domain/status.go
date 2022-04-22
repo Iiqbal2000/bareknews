@@ -8,7 +8,6 @@ type Status string
 const (
 	Publish Status = "publish"
 	Draft   Status = "draft"
-	Deleted Status = "deleted"
 )
 
 // Validate performs validating to the status.
@@ -19,8 +18,7 @@ func (s Status) Validate() error {
 		validation.In(
 			Publish.String(), 
 			Draft.String(), 
-			Deleted.String(),
-			).Error("status must be one of 'publish', 'draft', 'deleted'"),
+			).Error("status must be one of 'publish', 'draft'"),
 	)
 }
 
