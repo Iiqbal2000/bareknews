@@ -1,14 +1,8 @@
 package tags
 
 import (
-	"errors"
-
 	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/google/uuid"
-)
-
-var (
-	ErrBlankTag = errors.New("invalid tag")
 )
 
 // Tags is an aggregrate that represent a tag

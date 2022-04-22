@@ -1,14 +1,8 @@
 package news
 
 import (
-	"errors"
-
 	"github.com/Iiqbal2000/bareknews/domain"
 	"github.com/google/uuid"
-)
-
-var (
-	ErrInvalidTitle = errors.New("invalid title")
 )
 
 // News is an aggregate that represents a piece of news.
