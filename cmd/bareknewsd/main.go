@@ -15,6 +15,7 @@ import (
 )
 
 const dbfile = "./bareknews.db"
+const address = ":3333"
 
 // @title Bareknews API
 // @version 1.0
@@ -52,8 +53,6 @@ func main() {
 		r.Route("/tags", tagHandler.Route)
 		r.Route("/news", newsHandler.Route)
 	})
-
-	address := ":3333"
 
 	s := &http.Server{
 		Addr:         address,

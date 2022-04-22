@@ -15,11 +15,11 @@ type News struct {
 	Service posting.Service
 }
 
-type NewsInput struct {
-	Title  string   `json:"title"`
-	Status string   `json:"status"`
+type InputNews struct {
+	Title  string   `json:"title" validate:"required"`
+	Status string   `json:"status" enums:"publish,draft,deleted" default:"draft"`
 	Tags   []string `json:"tags"`
-	Body   string   `json:"body"`
+	Body   string   `json:"body" validate:"required"`
 }
 
 func (n News) Route(r chi.Router) {
@@ -30,10 +30,22 @@ func (n News) Route(r chi.Router) {
 	r.Get("/", n.GetAll)
 }
 
+// CreateNews godoc
+// @Summary      Create a news
+// @Description  Create a news and return it
+// @Tags         news
+// @Accept       json
+// @Produce      json
+// @Param news body InputNews true "A payload of new news"
+// @Success      201  {object}  bareknews.RespBody{data=posting.Response} "Response body for a new news"
+// @Failure      400  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /news [post]
 func (n News) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	payloadIn := NewsInput{}
+	payloadIn := InputNews{}
 
 	err := json.NewDecoder(r.Body).Decode(&payloadIn)
 	if err != nil {
@@ -53,9 +65,9 @@ func (n News) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := map[string]interface{}{
-		"message": "Successfully creating a news",
-		"data":    nws,
+	payloadRes := bareknews.RespBody{
+		Message: "Successfully creating a news",
+		Data: nws,
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -65,6 +77,17 @@ func (n News) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetNewsById godoc
+// @Summary      Get a news
+// @Description  Get a news by id
+// @Tags         news
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "News ID"  Format(uuid)
+// @Success      200  {object}  bareknews.RespBody{data=posting.Response} "Response body for a news"
+// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /news/{id} [get]
 func (n News) GetById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawID := chi.URLParam(r, "newsId")
@@ -86,9 +109,9 @@ func (n News) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := map[string]interface{}{
-		"message": "Successfully getting a news",
-		"data":    nws,
+	payloadRes := bareknews.RespBody{
+		Message: "Successfully getting a news",
+		Data: nws,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -98,6 +121,19 @@ func (n News) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateNews godoc
+// @Summary      Update a news
+// @Description  Update a news and return it
+// @Tags         news
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "News ID"  Format(uuid)
+// @Param news body InputNews true "A payload of new news"
+// @Success      200  {object}  bareknews.RespBody{data=posting.Response} "Response body for a new news"
+// @Failure      400  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /news/{id} [put]
 func (n News) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawID := chi.URLParam(r, "newsId")
@@ -110,7 +146,7 @@ func (n News) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadIn := NewsInput{}
+	payloadIn := InputNews{}
 
 	err = json.NewDecoder(r.Body).Decode(&payloadIn)
 	if err != nil {
@@ -137,9 +173,9 @@ func (n News) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := map[string]interface{}{
-		"message": "Successfully updating a news",
-		"data":    nws,
+	payloadRes := bareknews.RespBody{
+		Message: "Successfully updating a news",
+		Data: nws,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -149,6 +185,17 @@ func (n News) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DeleteNews godoc
+// @Summary      Delete a news
+// @Description  Delete a news by id
+// @Tags         news
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "News ID"  Format(uuid)
+// @Success      200  {object}  bareknews.RespBody{data=object}
+// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /news/{id} [delete]
 func (n News) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawID := chi.URLParam(r, "newsId")
@@ -182,6 +229,16 @@ func (n News) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetAllNews godoc
+// @Summary      Get all news
+// @Description  Get all news
+// @Tags         news
+// @Accept       json
+// @Produce      json
+// @Param   topic      query     string     false  "a topic"
+// @Success      200  {object}  bareknews.RespBody{data=[]posting.Response} "Array of news body"
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /news [get]
 func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	q := r.URL.Query()
@@ -213,9 +270,9 @@ func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
 		newsRes = append(newsRes, nws...)
 	}
 
-	payloadRes := map[string]interface{}{
-		"message": "Successfuly getting all news",
-		"data":    newsRes,
+	payloadRes := bareknews.RespBody{
+		Message: "Successfuly getting all news",
+		Data: newsRes,
 	}
 
 	w.WriteHeader(http.StatusOK)

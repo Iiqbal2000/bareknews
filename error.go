@@ -42,9 +42,11 @@ func WriteErrResponse(w http.ResponseWriter, err error) error {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	return json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": map[string]interface{}{
-			"message": err.Error(),
+	return json.NewEncoder(w).Encode(
+		ErrRespBody{
+			Err: map[string]interface{}{
+				"message": err.Error(),
+			},
 		},
-	})
+	)
 }

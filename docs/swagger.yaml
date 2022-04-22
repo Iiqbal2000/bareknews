@@ -1,4 +1,70 @@
 basePath: /api
+definitions:
+  bareknews.ErrRespBody:
+    properties:
+      error:
+        type: object
+    type: object
+  bareknews.RespBody:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+  handler.InputNews:
+    properties:
+      body:
+        type: string
+      status:
+        default: draft
+        enum:
+        - publish
+        - draft
+        - deleted
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    required:
+    - body
+    - title
+    type: object
+  handler.InputTag:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  posting.Response:
+    properties:
+      body:
+        type: string
+      id:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/tagging.Response'
+        type: array
+      title:
+        type: string
+    type: object
+  tagging.Response:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
 host: localhost:3333
 info:
   contact:
@@ -11,5 +77,584 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Bareknews API
   version: "1.0"
-paths: {}
+paths:
+  /news:
+    get:
+      consumes:
+      - application/json
+      description: Get all news
+      parameters:
+      - description: a topic
+        in: query
+        name: topic
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Array of news body
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/posting.Response'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Get all news
+      tags:
+      - news
+    post:
+      consumes:
+      - application/json
+      description: Create a news and return it
+      parameters:
+      - description: A payload of new news
+        in: body
+        name: news
+        required: true
+        schema:
+          $ref: '#/definitions/handler.InputNews'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Response body for a new news
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/posting.Response'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Create a news
+      tags:
+      - news
+  /news/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a news by id
+      parameters:
+      - description: News ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Delete a news
+      tags:
+      - news
+    get:
+      consumes:
+      - application/json
+      description: Get a news by id
+      parameters:
+      - description: News ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Response body for a news
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/posting.Response'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Get a news
+      tags:
+      - news
+    put:
+      consumes:
+      - application/json
+      description: Update a news and return it
+      parameters:
+      - description: News ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: A payload of new news
+        in: body
+        name: news
+        required: true
+        schema:
+          $ref: '#/definitions/handler.InputNews'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Response body for a new news
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/posting.Response'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Update a news
+      tags:
+      - news
+  /tags:
+    get:
+      consumes:
+      - application/json
+      description: Get all tags
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Array of tag body
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/tagging.Response'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Get all tags
+      tags:
+      - tags
+    post:
+      consumes:
+      - application/json
+      description: Create a tag and return it
+      parameters:
+      - description: A payload of new tag
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/handler.InputTag'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Response body for a new tag
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/tagging.Response'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Create a tag
+      tags:
+      - tags
+  /tags/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a tag by id
+      parameters:
+      - description: Tag ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Delete a tag
+      tags:
+      - tags
+    get:
+      consumes:
+      - application/json
+      description: Get a tag by id
+      parameters:
+      - description: Tag ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Response body for a tag
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/tagging.Response'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Get a tag
+      tags:
+      - tags
+    put:
+      consumes:
+      - application/json
+      description: Update a tag and return it
+      parameters:
+      - description: Tag ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: A payload of new tag
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/handler.InputTag'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Response body for a new tag
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.RespBody'
+            - properties:
+                data:
+                  $ref: '#/definitions/tagging.Response'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/bareknews.ErrRespBody'
+            - properties:
+                error:
+                  allOf:
+                  - type: object
+                  - properties:
+                      message:
+                        type: string
+                    type: object
+              type: object
+      summary: Update a tag
+      tags:
+      - tags
 swagger: "2.0"

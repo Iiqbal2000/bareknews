@@ -15,6 +15,10 @@ type Tags struct {
 	Service tagging.Service
 }
 
+type InputTag struct {
+	Name string `json:"name" validate:"required"`
+}
+
 func (t Tags) Route(r chi.Router) {
 	r.Post("/", t.Create)
 	r.Get("/{tagId}", t.GetById)
@@ -23,14 +27,22 @@ func (t Tags) Route(r chi.Router) {
 	r.Delete("/{tagId}", t.Delete)
 }
 
+// CreateTags godoc
+// @Summary      Create a tag
+// @Description  Create a tag and return it
+// @Tags         tags
+// @Accept       json
+// @Produce      json
+// @Param tag body InputTag true "A payload of new tag"
+// @Success      201  {object}  bareknews.RespBody{data=tagging.Response} "Response body for a new tag"
+// @Failure      400  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /tags [post]
 func (t Tags) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	type Input struct {
-		Name string `json:"name"`
-	}
-
-	payload := Input{}
+	payload := InputTag{}
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -50,9 +62,9 @@ func (t Tags) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := map[string]interface{}{
-		"message": "Successfully creating a tag",
-		"data": tagRes,
+	payloadRes := bareknews.RespBody{
+		Message: "Successfully creating a tag",
+		Data: tagRes,
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -62,6 +74,17 @@ func (t Tags) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetTagById godoc
+// @Summary      Get a tag
+// @Description  Get a tag by id
+// @Tags         tags
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Tag ID"  Format(uuid)
+// @Success      200  {object}  bareknews.RespBody{data=tagging.Response} "Response body for a tag"
+// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /tags/{id} [get]
 func (t Tags) GetById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawId := chi.URLParam(r, "tagId")
@@ -83,9 +106,9 @@ func (t Tags) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := map[string]interface{}{
-		"message": "Successfully getting a tag",
-		"data": tg,
+	payloadRes := bareknews.RespBody{
+		Message: "Successfully getting a tag",
+		Data: tg,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -96,6 +119,19 @@ func (t Tags) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateTags godoc
+// @Summary      Update a tag
+// @Description  Update a tag and return it
+// @Tags         tags
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Tag ID"  Format(uuid)
+// @Param tag body InputTag true "A payload of new tag"
+// @Success      200  {object}  bareknews.RespBody{data=tagging.Response} "Response body for a new tag"
+// @Failure      400  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /tags/{id} [put]
 func (t Tags) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawId := chi.URLParam(r, "tagId")
@@ -108,11 +144,7 @@ func (t Tags) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type Input struct {
-		Name string `json:"name"`
-	}
-
-	payload := Input{}
+	payload := InputTag{}
 
 	err = json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -132,9 +164,9 @@ func (t Tags) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := map[string]interface{}{
-		"message": "Successfully updating a tag",
-		"data": tg,
+	payloadRes := bareknews.RespBody{
+		Message: "Successfully updating a tag",
+		Data: tg,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -145,6 +177,15 @@ func (t Tags) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetAllTags godoc
+// @Summary      Get all tags
+// @Description  Get all tags
+// @Tags         tags
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  bareknews.RespBody{data=[]tagging.Response} "Array of tag body"
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /tags [get]
 func (t Tags) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tgs, err := t.Service.GetAll(ctx)
@@ -156,9 +197,9 @@ func (t Tags) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := map[string]interface{}{
-		"message": "Successfully getting all tags",
-		"data": tgs,
+	payloadRes := bareknews.RespBody{
+		Message: "Successfully getting all tags",
+		Data: tgs,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -169,6 +210,17 @@ func (t Tags) GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DeleteTags godoc
+// @Summary      Delete a tag
+// @Description  Delete a tag by id
+// @Tags         tags
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Tag ID"  Format(uuid)
+// @Success      200  {object}  bareknews.RespBody{data=object}
+// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Router       /tags/{id} [delete]
 func (t Tags) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -191,9 +243,9 @@ func (t Tags) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := map[string]interface{}{
-		"message": "Successfully deleting a tag",
-		"data": struct{}{},
+	payloadRes := bareknews.RespBody{
+		Message: "Successfully deleting a tag",
+		Data: struct{}{},
 	}
 
 	w.WriteHeader(http.StatusOK)
