@@ -1,27 +1,5 @@
 # Bareknews
-This is a news management system
+This is a sample project about the news management system
 
-## Endpoint List
-
-### Add a Tag
-
-```bash
-curl -X "POST" "http://localhost:3333/tags" \
-     -H 'Content-Type: application/json' \
-     -H 'Accept: application/json' \
-     -d $'{
-  "title": "I Am Ozzy",
-  "author": "Ozzy Osbourne",
-  "pages": 294,
-  "quantity":10
-}'
-```
-
-## Form Error Response
-```json
-{
-  "error": {
-    "message" : "Something bad happened",
-  }
-}
-```
+## Swagger (Rest API Documentation)
+[Swagger UI](http://localhost:3333/swagger/index.html)
