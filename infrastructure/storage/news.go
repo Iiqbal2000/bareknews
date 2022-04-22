@@ -47,7 +47,7 @@ func (s News) Save(ctx context.Context, n news.News) error {
 		return errors.Wrap(err, "storage.news.save")
 	}
 
-	err = s.insertTags(tx, n)
+	err = s.insertNewsTagsRelation(tx, n)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (s News) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
 		}
 	}
 
-	tagsResult, err := s.getTags(ctx, post.ID)
+	tagsResult, err := s.getTagsIds(ctx, post.ID)
 	if err != nil {
 		return &news.News{}, err
 	}
@@ -124,7 +124,7 @@ func (s News) Update(ctx context.Context, n news.News) error {
 
 	// inserting new relation between news and tags if they
 	// exist.
-	err = s.insertTags(tx, n)
+	err = s.insertNewsTagsRelation(tx, n)
 	if err != nil {
 		return err
 	}
@@ -207,10 +207,11 @@ func (s News) GetAll(ctx context.Context) ([]news.News, error) {
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "storage.news.getAll")
 		}
-		tagsResult, err := s.getTags(ctx, post.ID)
+		tagsResult, err := s.getTagsIds(ctx, post.ID)
 		if err != nil {
 			return []news.News{}, err
 		}
+
 		newsResults = append(newsResults, news.News{
 			Post:   post,
 			Status: *status,
@@ -262,7 +263,7 @@ func (s News) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News, 
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
 		}
-		tagsResult, err := s.getTags(ctx, post.ID)
+		tagsResult, err := s.getTagsIds(ctx, post.ID)
 		if err != nil {
 			return []news.News{}, err
 		}
@@ -276,6 +277,58 @@ func (s News) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News, 
 
 	if newsRows.Err() != nil {
 		return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
+	}
+
+	return newsResult, nil
+}
+
+func (s News) GetAllByStatus(ctx context.Context, status domain.Status) ([]news.News, error) {
+	builder := sqlbuilder.NewSelectBuilder()
+	builder.Select("id", "title", "status", "body", "slug")
+	builder.From("news")
+	builder.Where(builder.Equal("status", status))
+	newsQuery, newsArgs := builder.Build()
+
+	newsRows, err := s.Conn.QueryContext(ctx, newsQuery, newsArgs...)
+	if err != nil {
+		return []news.News{}, errors.Wrap(err, "storage.news.getAllByStatus")
+	}
+
+	defer newsRows.Close()
+
+	newsResult := make([]news.News, 0)
+
+	for newsRows.Next() {
+		post := domain.Post{}
+		slug := new(domain.Slug)
+		status := new(domain.Status)
+
+		err = newsRows.Scan(
+			&post.ID,
+			&post.Title,
+			status,
+			&post.Body,
+			slug,
+		)
+		if err != nil {
+			return []news.News{}, errors.Wrap(err, "storage.news.getAllByStatus")
+		}
+
+		tagsResult, err := s.getTagsIds(ctx, post.ID)
+		if err != nil {
+			return []news.News{}, err
+		}
+
+		newsResult = append(newsResult, news.News{
+			Post:   post,
+			Status: *status,
+			Slug:   *slug,
+			TagsID: tagsResult,
+		})
+	}
+
+	if newsRows.Err() != nil {
+		return []news.News{}, errors.Wrap(err, "storage.news.getAllByStatus")
 	}
 
 	return newsResult, nil
@@ -313,25 +366,27 @@ func (s News) getNewsIds(ctx context.Context, tagsID uuid.UUID) ([]uuid.UUID, er
 	return newsID, nil
 }
 
-func (s News) insertTags(tx *sql.Tx, n news.News) error {
-	for i := range n.TagsID {
-		builder := sqlbuilder.NewInsertBuilder()
-		builder.InsertInto("news_tags")
-		builder.Cols("newsID", "tagsID")
-		builder.Values(n.Post.ID, n.TagsID[i])
-		query, args := builder.Build()
+func (s News) insertNewsTagsRelation(tx *sql.Tx, nws news.News) error {
+	builder := sqlbuilder.NewInsertBuilder()
 
-		_, err := tx.Exec(query, args...)
-		if err != nil {
-			if possibleErr, ok := err.(sqlite3.Error); ok {
-				if possibleErr.ExtendedCode == sqlite3.ErrConstraintUnique {
-					return bareknews.ErrDataAlreadyExist
-				}
-			}
-			return errors.Wrap(err, "storage.news.insertTagsReference")
-		}
+	builder.InsertInto("news_tags")
+	builder.Cols("newsID", "tagsID")
+	
+	for i := range nws.TagsID {
+		builder.Values(nws.Post.ID, nws.TagsID[i])
 	}
 
+	query, args := builder.Build()
+
+	_, err := tx.Exec(query, args...)
+	if err != nil {
+		if possibleErr, ok := err.(sqlite3.Error); ok {
+			if possibleErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+				return bareknews.ErrDataAlreadyExist
+			}
+		}
+		return errors.Wrap(err, "storage.news.bulkInsertRelation")
+	}
 	return nil
 }
 
@@ -349,13 +404,14 @@ func (s News) deleteTags(tx *sql.Tx, id uuid.UUID) error {
 	return nil
 }
 
-func (s News) getTags(ctx context.Context,newsId uuid.UUID) ([]uuid.UUID, error) {
+func (s News) getTagsIds(ctx context.Context, newsId uuid.UUID) ([]uuid.UUID, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Distinct()
 	builder.Select("tagsID")
 	builder.From("news_tags")
 	builder.Where(builder.Equal("newsID", newsId))
 	query, args := builder.Build()
+
 	rows, err := s.Conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return []uuid.UUID{}, errors.Wrap(err, "storage.news.getTagsReference")

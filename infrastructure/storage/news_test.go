@@ -15,12 +15,12 @@ func TestSaveNews(t *testing.T) {
 	newsStore := News{conn}
 	is := is.New(t)
 
-	tgId := uuid.New()
+	tgIds := []uuid.UUID{uuid.New(), uuid.New(), uuid.New()}
 
 	title := "news 1"
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
-	want := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
+	want := news.New(title, body, domain.Draft, tgIds)
 	err := newsStore.Save(context.TODO(), *want)
 	is.NoErr(err)
 
@@ -31,26 +31,29 @@ func TestSaveNews(t *testing.T) {
 	is.Equal(got.Status, want.Status)
 	is.Equal(got.Post.Body, want.Post.Body)
 	is.Equal(got.Slug, want.Slug)
+	is.Equal(len(got.TagsID), len(tgIds))
 }
 
 func TestUpdateNews(t *testing.T) {
 	conn := Run(":memory:", true)
 	newsStore := News{conn}
 	is := is.New(t)
-	tgId := uuid.New()
+	tgIds := []uuid.UUID{uuid.New(), uuid.New(), uuid.New()}
 
 	title := "news 1"
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
-	news := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
+	news := news.New(title, body, domain.Draft, tgIds)
 	err := newsStore.Save(context.TODO(), *news)
 	is.NoErr(err)
 
 	wantTitle := "news 2"
 	wantStatus := domain.Publish
+	wantTags := []uuid.UUID{uuid.New(), uuid.New(), uuid.New(), uuid.New(), uuid.New()}
 
 	news.ChangeTitle(wantTitle)
 	news.ChangeStatus(wantStatus)
+	news.ChangeTags(wantTags)
 
 	err = newsStore.Update(context.TODO(), *news)
 	is.NoErr(err)
@@ -60,6 +63,7 @@ func TestUpdateNews(t *testing.T) {
 	is.True(got != nil)
 	is.Equal(got.Post.Title, wantTitle)
 	is.Equal(got.Status, wantStatus)
+	is.Equal(len(got.TagsID), len(wantTags))
 }
 
 func TestDeleteNews(t *testing.T) {
@@ -109,8 +113,8 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestGetAllNews(t *testing.T) {
-	conn := Run(":memory:", true)
-	newsStore := News{conn}
+	conn := Run("./../../bareknews.db", true)
+	newsStore := News{Conn: conn}
 
 	tgId := uuid.New()
 
@@ -151,7 +155,7 @@ func TestGetAllNews(t *testing.T) {
 }
 
 func TestGetAllByTopic(t *testing.T) {
-	conn := Run(":memory:", true)
+	conn := Run("./../../bareknews.db", true)
 	newsStore := News{conn}
 
 	tgId := uuid.New()
@@ -178,16 +182,40 @@ func TestGetAllByTopic(t *testing.T) {
 	is := is.New(t)
 	is.NoErr(err)
 	is.Equal(len(got), 2)
+}
+
+func TestGetAllByStatus(t *testing.T) {
+	conn := Run("./../../bareknews.db", true)
+	newsStore := News{conn}
+
+	tgId := uuid.New()
+
+	title1 := "news 1"
+	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
+
+	wantNews1 := news.New(title1, body1, domain.Publish, []uuid.UUID{tgId})
+	err := newsStore.Save(context.TODO(), *wantNews1)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	title2 := "news 2"
+	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+
+	wantNews2 := news.New(title2, body2, domain.Draft, []uuid.UUID{tgId})
+	err = newsStore.Save(context.TODO(), *wantNews2)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	got, err := newsStore.GetAllByStatus(context.TODO(), domain.Publish)
+	is := is.New(t)
+	is.NoErr(err)
+	is.Equal(len(got), 1)
 
 	is.Equal(got[0].Post.Title, wantNews1.Post.Title)
 	is.Equal(got[0].Status, wantNews1.Status)
 	is.Equal(got[0].Post.Body, wantNews1.Post.Body)
 	is.Equal(got[0].Slug, wantNews1.Slug)
 	is.Equal(len(got[0].TagsID), 1)
-
-	is.Equal(got[1].Post.Title, wantNews2.Post.Title)
-	is.Equal(got[1].Status, wantNews2.Status)
-	is.Equal(got[1].Post.Body, wantNews2.Post.Body)
-	is.Equal(got[1].Slug, wantNews2.Slug)
-	is.Equal(len(got[1].TagsID), 1)
 }
