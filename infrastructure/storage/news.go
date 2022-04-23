@@ -198,6 +198,7 @@ func (s News) GetAll(ctx context.Context) ([]news.News, error) {
 	defer rows.Close()
 
 	newsResults := make([]news.News, 0)
+	postIds := make([]uuid.UUID, 0)
 
 	for rows.Next() {
 		post := domain.Post{}
@@ -207,21 +208,32 @@ func (s News) GetAll(ctx context.Context) ([]news.News, error) {
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "storage.news.getAll")
 		}
-		tagsResult, err := s.getTagsIds(ctx, post.ID)
-		if err != nil {
-			return []news.News{}, err
-		}
+
+		postIds = append(postIds, post.ID)
 
 		newsResults = append(newsResults, news.News{
 			Post:   post,
 			Status: *status,
 			Slug:   *slug,
-			TagsID: tagsResult,
 		})
 	}
 
 	if rows.Err() != nil {
 		return []news.News{}, errors.Wrap(err, "storage.news.getAll")
+	}
+
+	newsIdBucket, err := s.getNewsTagsIds(ctx, postIds)
+	if err != nil {
+		return []news.News{}, err
+	}
+
+	for i, elem := range newsResults {
+		newsResults[i] = news.News{
+			Post:   elem.Post,
+			Status: elem.Status,
+			Slug:   elem.Slug,
+			TagsID: newsIdBucket[elem.Post.ID],
+		}
 	}
 
 	return newsResults, nil
@@ -254,6 +266,7 @@ func (s News) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News, 
 	defer newsRows.Close()
 
 	newsResult := make([]news.News, 0)
+	postIds := make([]uuid.UUID, 0)
 
 	for newsRows.Next() {
 		post := domain.Post{}
@@ -263,20 +276,32 @@ func (s News) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News, 
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
 		}
-		tagsResult, err := s.getTagsIds(ctx, post.ID)
-		if err != nil {
-			return []news.News{}, err
-		}
+
+		postIds = append(postIds, post.ID)
+
 		newsResult = append(newsResult, news.News{
 			Post:   post,
 			Status: *status,
 			Slug:   *slug,
-			TagsID: tagsResult,
 		})
 	}
 
 	if newsRows.Err() != nil {
 		return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
+	}
+
+	newsIdBucket, err := s.getNewsTagsIds(ctx, postIds)
+	if err != nil {
+		return []news.News{}, err
+	}
+
+	for i, elem := range newsResult {
+		newsResult[i] = news.News{
+			Post:   elem.Post,
+			Status: elem.Status,
+			Slug:   elem.Slug,
+			TagsID: newsIdBucket[elem.Post.ID],
+		}
 	}
 
 	return newsResult, nil
@@ -297,6 +322,7 @@ func (s News) GetAllByStatus(ctx context.Context, status domain.Status) ([]news.
 	defer newsRows.Close()
 
 	newsResult := make([]news.News, 0)
+	postIds := make([]uuid.UUID, 0)
 
 	for newsRows.Next() {
 		post := domain.Post{}
@@ -314,21 +340,31 @@ func (s News) GetAllByStatus(ctx context.Context, status domain.Status) ([]news.
 			return []news.News{}, errors.Wrap(err, "storage.news.getAllByStatus")
 		}
 
-		tagsResult, err := s.getTagsIds(ctx, post.ID)
-		if err != nil {
-			return []news.News{}, err
-		}
+		postIds = append(postIds, post.ID)
 
 		newsResult = append(newsResult, news.News{
 			Post:   post,
 			Status: *status,
 			Slug:   *slug,
-			TagsID: tagsResult,
 		})
 	}
 
 	if newsRows.Err() != nil {
 		return []news.News{}, errors.Wrap(err, "storage.news.getAllByStatus")
+	}
+
+	newsIdBucket, err := s.getNewsTagsIds(ctx, postIds)
+	if err != nil {
+		return []news.News{}, err
+	}
+
+	for i, elem := range newsResult {
+		newsResult[i] = news.News{
+			Post:   elem.Post,
+			Status: elem.Status,
+			Slug:   elem.Slug,
+			TagsID: newsIdBucket[elem.Post.ID],
+		}
 	}
 
 	return newsResult, nil
@@ -402,6 +438,52 @@ func (s News) deleteTags(tx *sql.Tx, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (s News) getNewsTagsIds(ctx context.Context, newsIds []uuid.UUID) (map[uuid.UUID][]uuid.UUID, error) {
+	idstr := make([]string, 0)
+
+	for _, elem := range newsIds {
+		idstr = append(idstr, elem.String())
+	}
+
+	builder := sqlbuilder.NewSelectBuilder()
+	l := sqlbuilder.List(idstr)
+	builder.Select("newsID", "tagsID")
+	builder.From("news_tags")
+	builder.Where(builder.In("newsID", l))
+	query, args := builder.Build()
+
+	rows, err := s.Conn.QueryContext(ctx, query, args...)
+	if err != nil {
+		return make(map[uuid.UUID][]uuid.UUID), errors.Wrap(err, "storage.news.getNewsTagsIds")
+	}
+
+	defer rows.Close()
+	idsBatch := make(map[uuid.UUID][]uuid.UUID)
+
+	for rows.Next() {
+		tagId := uuid.UUID{}
+		newsId := uuid.UUID{}
+		
+		err = rows.Scan(&newsId, &tagId)
+		if err != nil {
+			return make(map[uuid.UUID][]uuid.UUID), errors.Wrap(err, "storage.news.getNewsTagsIds")
+		}
+
+		if elem, ok := idsBatch[newsId]; ok {
+			elem = append(elem, tagId)
+		} else {
+			// idsBatch[newsId] = []uuid.UUID{}
+			idsBatch[newsId] = append(idsBatch[newsId], tagId)
+		}
+	}
+
+	if rows.Err() != nil {
+		return make(map[uuid.UUID][]uuid.UUID), errors.Wrap(err, "storage.news.getNewsTagsIds")
+	}
+
+	return idsBatch, nil
 }
 
 func (s News) getTagsIds(ctx context.Context, newsId uuid.UUID) ([]uuid.UUID, error) {
