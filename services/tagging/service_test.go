@@ -142,7 +142,7 @@ func TestDelete(t *testing.T) {
 		is := is.New(t)
 
 		err := svc.Delete(context.TODO(), uuid.New())
-		is.Equal(err, sql.ErrNoRows)
+		is.True(err != nil)
 		is.Equal(len(store.DeleteCalls()), 0)
 	})
 }

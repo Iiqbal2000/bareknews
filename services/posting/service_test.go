@@ -150,7 +150,6 @@ func TestDelete(t *testing.T) {
 		svc := posting.New(store, tagging.New(&tags.RepositoryMock{}))
 		err := svc.Delete(context.TODO(), uuid.New())
 		is.True(err != nil)
-		is.Equal(err.Error(), sql.ErrNoRows.Error())
 		is.Equal(len(store.CountCalls()), 1)
 		is.Equal(len(store.DeleteCalls()), 0)
 	})
