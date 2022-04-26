@@ -47,11 +47,9 @@ func (s News) Save(ctx context.Context, n news.News) error {
 		return errors.Wrap(err, "storage.news.save")
 	}
 
-	if len(n.TagsID) > 0 {
-		err = s.insertNewsTagsRelation(tx, n)
-		if err != nil {
-			return err
-		}
+	err = s.insertNewsTagsRelation(tx, n)
+	if err != nil {
+		return err
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -405,6 +403,11 @@ func (s News) getNewsIds(ctx context.Context, tagsID uuid.UUID) ([]uuid.UUID, er
 }
 
 func (s News) insertNewsTagsRelation(tx *sql.Tx, nws news.News) error {
+	// to avoid incomplete input error
+	if len(nws.TagsID) == 0 {
+		return nil
+	}
+
 	builder := sqlbuilder.NewInsertBuilder()
 
 	builder.InsertInto("news_tags")
