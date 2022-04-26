@@ -47,9 +47,11 @@ func (s News) Save(ctx context.Context, n news.News) error {
 		return errors.Wrap(err, "storage.news.save")
 	}
 
-	err = s.insertNewsTagsRelation(tx, n)
-	if err != nil {
-		return err
+	if len(n.TagsID) > 0 {
+		err = s.insertNewsTagsRelation(tx, n)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -407,7 +409,7 @@ func (s News) insertNewsTagsRelation(tx *sql.Tx, nws news.News) error {
 
 	builder.InsertInto("news_tags")
 	builder.Cols("newsID", "tagsID")
-	
+
 	for i := range nws.TagsID {
 		builder.Values(nws.Post.ID, nws.TagsID[i])
 	}
@@ -421,7 +423,7 @@ func (s News) insertNewsTagsRelation(tx *sql.Tx, nws news.News) error {
 				return bareknews.ErrDataAlreadyExist
 			}
 		}
-		return errors.Wrap(err, "storage.news.bulkInsertRelation")
+		return errors.Wrap(err, "storage.news.insertNewsTagsRelation")
 	}
 	return nil
 }
@@ -465,7 +467,7 @@ func (s News) getNewsTagsIds(ctx context.Context, newsIds []uuid.UUID) (map[uuid
 	for rows.Next() {
 		tagId := uuid.UUID{}
 		newsId := uuid.UUID{}
-		
+
 		err = rows.Scan(&newsId, &tagId)
 		if err != nil {
 			return make(map[uuid.UUID][]uuid.UUID), errors.Wrap(err, "storage.news.getNewsTagsIds")
