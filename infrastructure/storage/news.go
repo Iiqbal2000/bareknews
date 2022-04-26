@@ -117,7 +117,7 @@ func (s News) Update(ctx context.Context, n news.News) error {
 	}
 
 	// deleting relation between news and tags.
-	err = s.deleteTags(tx, n.Post.ID)
+	err = s.deleteNewsTagsRelation(tx, n.Post.ID)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (s News) Delete(ctx context.Context, id uuid.UUID) error {
 
 	defer tx.Rollback()
 
-	err = s.deleteTags(tx, id)
+	err = s.deleteNewsTagsRelation(tx, id)
 	if err != nil {
 		return err
 	}
@@ -426,7 +426,7 @@ func (s News) insertNewsTagsRelation(tx *sql.Tx, nws news.News) error {
 	return nil
 }
 
-func (s News) deleteTags(tx *sql.Tx, id uuid.UUID) error {
+func (s News) deleteNewsTagsRelation(tx *sql.Tx, id uuid.UUID) error {
 	builderDel := sqlbuilder.NewDeleteBuilder()
 	builderDel.DeleteFrom("news_tags")
 	builderDel.Where(builderDel.Equal("newsID", id))
