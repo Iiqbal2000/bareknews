@@ -45,8 +45,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "draft",
+                            "publish"
+                        ],
                         "type": "string",
-                        "description": "status of news that has values ",
+                        "description": "status of the news",
                         "name": "status",
                         "in": "query"
                     }

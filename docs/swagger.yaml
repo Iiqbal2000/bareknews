@@ -87,7 +87,10 @@ paths:
         in: query
         name: topic
         type: string
-      - description: 'status of news that has values '
+      - description: status of the news
+        enum:
+        - draft
+        - publish
         in: query
         name: status
         type: string

@@ -236,7 +236,7 @@ func (n News) Delete(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param   topic      query     string     false  "a topic"
-// @Param   status      query     string     false  "status of news that has values "draft" or "publish""
+// @Param   status      query     string     false  "status of the news"	Enums(draft, publish)
 // @Success      200  {object}  bareknews.RespBody{data=[]posting.Response} "Array of news body"
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /news [get]
