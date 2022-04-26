@@ -58,7 +58,7 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, newTagname string) (R
 		}
 	}
 
-	tag.ChangeName(newTagname)
+	tag.ChangeName(strings.TrimSpace(newTagname))
 
 	err = tag.Validate()
 	if err != nil {
