@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/domain/tags"
@@ -25,7 +26,7 @@ func New(repo tags.Repository) Service {
 }
 
 func (s Service) Create(ctx context.Context, tagName string) (Response, error) {
-	tag := tags.New(tagName)
+	tag := tags.New(strings.TrimSpace(tagName))
 
 	err := tag.Validate()
 	if err != nil {
