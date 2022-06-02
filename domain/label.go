@@ -7,8 +7,8 @@ import (
 
 // Label is an entity that represents the label
 type Label struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
+	ID   uuid.UUID
+	Name string
 }
 
 func (l Label) Validate() error {

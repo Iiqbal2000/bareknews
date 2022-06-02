@@ -7,9 +7,9 @@ import (
 
 // Post is an entity that represents a post.
 type Post struct {
-	ID uuid.UUID	`json:"id"`
-	Title string	`json:"title"`
-	Body string	`json:"body"`
+	ID uuid.UUID
+	Title string
+	Body string
 }
 
 func (p Post) Validate() error {

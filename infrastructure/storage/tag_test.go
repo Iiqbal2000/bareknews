@@ -62,6 +62,7 @@ func TestUpdate(t *testing.T) {
 	is.Equal(tag.Label.Name, "tag 16")
 	is.Equal(tag.Slug.String(), "tag-16")
 }
+
 func TestDelete(t *testing.T) {
 	conn := Run(":memory:", true)
 	storage := Tag{conn}
@@ -112,7 +113,7 @@ func TestGetByNames(t *testing.T) {
 	err = storage.Save(context.TODO(), *tag2)
 	is.NoErr(err)
 
-	got, err := storage.GetByNames(context.TODO(), tag1.Label.Name)
+	got, err := storage.GetByNames(context.TODO(), tag1.Label.Name, tag2.Label.Name)
 	is.NoErr(err)
 	is.Equal(got[0].Label.ID, tag1.Label.ID)
 	is.Equal(got[0].Label.Name, tag1.Label.Name)

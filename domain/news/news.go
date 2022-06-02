@@ -8,8 +8,8 @@ import (
 // News is an aggregate that represents a piece of news.
 type News struct {
 	Post   domain.Post
-	Status domain.Status `json:"status"`
-	Slug   domain.Slug   `json:"slug"`
+	Status domain.Status
+	Slug   domain.Slug
 	TagsID []uuid.UUID
 }
 
