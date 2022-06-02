@@ -1,4 +1,4 @@
-package handler
+package tags
 
 import (
 	"encoding/json"
@@ -6,20 +6,19 @@ import (
 	"net/http"
 
 	"github.com/Iiqbal2000/bareknews"
-	"github.com/Iiqbal2000/bareknews/services/tagging"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
-type Tags struct {
-	Service tagging.Service
+type Restapi struct {
+	Service Service
 }
 
 type InputTag struct {
 	Name string `json:"name" validate:"required"`
 }
 
-func (t Tags) Route(r chi.Router) {
+func (t Restapi) Route(r chi.Router) {
 	r.Post("/", t.Create)
 	r.Get("/{tagId}", t.GetById)
 	r.Put("/{tagId}", t.Update)
@@ -39,7 +38,7 @@ func (t Tags) Route(r chi.Router) {
 // @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /tags [post]
-func (t Tags) Create(w http.ResponseWriter, r *http.Request) {
+func (t Restapi) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	payload := InputTag{}
@@ -85,7 +84,7 @@ func (t Tags) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /tags/{id} [get]
-func (t Tags) GetById(w http.ResponseWriter, r *http.Request) {
+func (t Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawId := chi.URLParam(r, "tagId")
 	id, err := uuid.Parse(rawId)
@@ -132,7 +131,7 @@ func (t Tags) GetById(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /tags/{id} [put]
-func (t Tags) Update(w http.ResponseWriter, r *http.Request) {
+func (t Restapi) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawId := chi.URLParam(r, "tagId")
 	id, err := uuid.Parse(rawId)
@@ -186,7 +185,7 @@ func (t Tags) Update(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {object}  bareknews.RespBody{data=[]tagging.Response} "Array of tag body"
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /tags [get]
-func (t Tags) GetAll(w http.ResponseWriter, r *http.Request) {
+func (t Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tgs, err := t.Service.GetAll(ctx)
 	if err != nil {
@@ -221,7 +220,7 @@ func (t Tags) GetAll(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /tags/{id} [delete]
-func (t Tags) Delete(w http.ResponseWriter, r *http.Request) {
+func (t Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	rawId := chi.URLParam(r, "tagId")

@@ -1,15 +1,13 @@
-package posting_test
+package news_test
 
 import (
 	"context"
 	"database/sql"
 	"testing"
 
-	"github.com/Iiqbal2000/bareknews/domain"
-	"github.com/Iiqbal2000/bareknews/domain/news"
-	"github.com/Iiqbal2000/bareknews/domain/tags"
-	"github.com/Iiqbal2000/bareknews/services/posting"
-	"github.com/Iiqbal2000/bareknews/services/tagging"
+	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/news"
+	"github.com/Iiqbal2000/bareknews/tags"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 )
@@ -30,7 +28,7 @@ func TestCreate(t *testing.T) {
 
 		is := is.New(t)
 
-		svc := posting.New(store, tagging.New(tgStore))
+		svc := news.CreateSvc(store, tags.CreateSvc(tgStore))
 		_, err := svc.Create(context.TODO(), "news title", "news body", "draft", []string{"tag1"})
 		is.NoErr(err)
 		is.Equal(len(store.SaveCalls()), 1)
@@ -52,7 +50,7 @@ func TestCreate(t *testing.T) {
 
 		is := is.New(t)
 
-		svc := posting.New(store, tagging.New(tgStore))
+		svc := news.CreateSvc(store, tags.CreateSvc(tgStore))
 		_, err := svc.Create(context.TODO(), "", "news body", "draft", []string{"tag1"})
 		is.True(err != nil)
 		is.Equal(len(store.SaveCalls()), 0)
@@ -74,7 +72,7 @@ func TestCreate(t *testing.T) {
 
 		is := is.New(t)
 
-		svc := posting.New(store, tagging.New(tgStore))
+		svc := news.CreateSvc(store, tags.CreateSvc(tgStore))
 		_, err := svc.Create(context.TODO(), "news title", "news body", "draftler", []string{"tag1"})
 		is.True(err != nil)
 		is.Equal(len(store.SaveCalls()), 0)
@@ -83,7 +81,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	payload := news.New("news title", "news body", "draft", []uuid.UUID{uuid.New()})
+	payload := news.Create("news title", "news body", "draft", []uuid.UUID{uuid.New()})
 
 	store := &news.RepositoryMock{
 		GetByIdFunc: func(ctx context.Context, id uuid.UUID) (*news.News, error) {
@@ -105,7 +103,7 @@ func TestUpdate(t *testing.T) {
 
 	is := is.New(t)
 
-	svc := posting.New(store, tagging.New(tgStore))
+	svc := news.CreateSvc(store, tags.CreateSvc(tgStore))
 	_, err := svc.Update(context.TODO(), payload.Post.ID, "news title update", "", "", []string{})
 	is.NoErr(err)
 	is.Equal(len(store.GetByIdCalls()), 1)
@@ -126,8 +124,8 @@ func TestDelete(t *testing.T) {
 
 		is := is.New(t)
 
-		svc := posting.New(store, tagging.New(&tags.RepositoryMock{}))
-		payload := news.New("news title", "news body", "draft", []uuid.UUID{uuid.New()})
+		svc := news.CreateSvc(store, tags.CreateSvc(&tags.RepositoryMock{}))
+		payload := news.Create("news title", "news body", "draft", []uuid.UUID{uuid.New()})
 		err := svc.Delete(context.TODO(), payload.Post.ID)
 		is.NoErr(err)
 
@@ -147,7 +145,7 @@ func TestDelete(t *testing.T) {
 
 		is := is.New(t)
 
-		svc := posting.New(store, tagging.New(&tags.RepositoryMock{}))
+		svc := news.CreateSvc(store, tags.CreateSvc(&tags.RepositoryMock{}))
 		err := svc.Delete(context.TODO(), uuid.New())
 		is.True(err != nil)
 		is.Equal(len(store.CountCalls()), 1)
@@ -157,13 +155,13 @@ func TestDelete(t *testing.T) {
 
 func TestGetAllByStatus(t *testing.T) {
 	nwsStore := &news.RepositoryMock{
-		GetAllByStatusFunc: func(ctx context.Context, status domain.Status) ([]news.News, error) {
+		GetAllByStatusFunc: func(ctx context.Context, status bareknews.Status) ([]news.News, error) {
 			return nil, nil
 		},
 	}
 	tgStore := &tags.RepositoryMock{}
 
-	nwsSvc := posting.New(nwsStore, tagging.New(tgStore))
+	nwsSvc := news.CreateSvc(nwsStore, tags.CreateSvc(tgStore))
 
 	is := is.New(t)
 	_, err := nwsSvc.GetAllByStatus(context.TODO(), "draft")

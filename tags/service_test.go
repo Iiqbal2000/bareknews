@@ -1,4 +1,4 @@
-package tagging_test
+package tags_test
 
 import (
 	"context"
@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"github.com/Iiqbal2000/bareknews"
-	"github.com/Iiqbal2000/bareknews/domain/tags"
-	"github.com/Iiqbal2000/bareknews/services/tagging"
+	"github.com/Iiqbal2000/bareknews/tags"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 )
@@ -23,7 +22,7 @@ func TestCreate(t *testing.T) {
 			},
 		}
 
-		svc := tagging.New(store)
+		svc := tags.CreateSvc(store)
 		_, err := svc.Create(context.TODO(), "tag 1")
 
 		is := is.New(t)
@@ -41,7 +40,7 @@ func TestCreate(t *testing.T) {
 			},
 		}
 
-		svc := tagging.New(store)
+		svc := tags.CreateSvc(store)
 		_, err := svc.Create(context.TODO(), "")
 
 		is := is.New(t)
@@ -59,7 +58,7 @@ func TestCreate(t *testing.T) {
 			},
 		}
 
-		svc := tagging.New(store)
+		svc := tags.CreateSvc(store)
 		_, err := svc.Create(context.TODO(), "Lorem Ipsum is simply dummy text of the printing and typesetting industry.")
 		is := is.New(t)
 		is.True(err != nil)
@@ -70,7 +69,7 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	t.Run("valid payload should be success", func(t *testing.T) {
-		tg := tags.New("tag 1")
+		tg := tags.Create("tag 1")
 
 		store := &tags.RepositoryMock{
 			GetByIdFunc: func(ctx context.Context, id uuid.UUID) (*tags.Tags, error) {
@@ -82,7 +81,7 @@ func TestUpdate(t *testing.T) {
 			},
 		}
 
-		svc := tagging.New(store)
+		svc := tags.CreateSvc(store)
 		name := "tag 2"
 		got, err := svc.Update(context.TODO(), tg.Label.ID, name)
 		is := is.New(t)
@@ -101,7 +100,7 @@ func TestUpdate(t *testing.T) {
 			},
 		}
 
-		svc := tagging.New(store)
+		svc := tags.CreateSvc(store)
 		_, err := svc.Update(context.TODO(), uuid.New(), "tag 2")
 		is := is.New(t)
 		is.Equal(err, bareknews.ErrDataNotFound)
@@ -120,7 +119,7 @@ func TestDelete(t *testing.T) {
 			},
 		}
 
-		svc := tagging.New(store)
+		svc := tags.CreateSvc(store)
 		is := is.New(t)
 
 		err := svc.Delete(context.TODO(), uuid.New())
@@ -138,7 +137,7 @@ func TestDelete(t *testing.T) {
 			},
 		}
 
-		svc := tagging.New(store)
+		svc := tags.CreateSvc(store)
 		is := is.New(t)
 
 		err := svc.Delete(context.TODO(), uuid.New())

@@ -6,10 +6,9 @@ import (
 	"time"
 
 	_ "github.com/Iiqbal2000/bareknews/docs"
-	"github.com/Iiqbal2000/bareknews/infrastructure/handler"
-	"github.com/Iiqbal2000/bareknews/infrastructure/storage"
-	"github.com/Iiqbal2000/bareknews/services/posting"
-	"github.com/Iiqbal2000/bareknews/services/tagging"
+	"github.com/Iiqbal2000/bareknews/news"
+	"github.com/Iiqbal2000/bareknews/tags"
+	"github.com/Iiqbal2000/bareknews/pkg/sqlite3"
 	"github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -33,15 +32,15 @@ const address = ":3333"
 func main() {
 	r := chi.NewRouter()
 
-	dbConn := storage.Run(dbfile, true)
-	newsDB := storage.News{Conn: dbConn}
-	tagDB := storage.Tag{Conn: dbConn}
+	dbConn := sqlite3.Run(dbfile, true)
+	newsDB := sqlite3.News{Conn: dbConn}
+	tagDB := sqlite3.Tag{Conn: dbConn}
 
-	taggingSvc := tagging.New(tagDB)
-	postingSvc := posting.New(newsDB, taggingSvc)
+	taggingSvc := tags.CreateSvc(tagDB)
+	postingSvc := news.CreateSvc(newsDB, taggingSvc)
 
-	tagHandler := handler.Tags{Service: taggingSvc}
-	newsHandler := handler.News{Service: postingSvc}
+	tagHandler := tags.Restapi{Service: taggingSvc}
+	newsHandler := news.Restapi{Service: postingSvc}
 
 	r.Use(ContentTypeJSON)
 
@@ -62,7 +61,7 @@ func main() {
 		IdleTimeout:  time.Duration(15 * time.Second),
 	}
 
-	log.Printf("Starting server at %s\n", address)
+	log.Printf("Starting server at PORT %s\n", address)
 
 	s.ListenAndServe()
 }

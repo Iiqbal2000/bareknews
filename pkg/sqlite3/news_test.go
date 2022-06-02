@@ -1,18 +1,19 @@
-package storage
+package sqlite3_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/Iiqbal2000/bareknews/domain"
-	"github.com/Iiqbal2000/bareknews/domain/news"
+	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/pkg/sqlite3"
+	"github.com/Iiqbal2000/bareknews/news"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 )
 
 func TestSaveNews(t *testing.T) {
-	conn := Run(":memory:", true)
-	newsStore := News{conn}
+	conn := sqlite3.Run(":memory:", true)
+	newsStore := sqlite3.News{conn}
 	is := is.New(t)
 
 	tgIds := []uuid.UUID{uuid.New(), uuid.New(), uuid.New()}
@@ -20,7 +21,7 @@ func TestSaveNews(t *testing.T) {
 	title := "news 1"
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
-	want := news.New(title, body, domain.Draft, tgIds)
+	want := news.Create(title, body, bareknews.Draft, tgIds)
 	err := newsStore.Save(context.TODO(), *want)
 	is.NoErr(err)
 
@@ -35,20 +36,20 @@ func TestSaveNews(t *testing.T) {
 }
 
 func TestUpdateNews(t *testing.T) {
-	conn := Run(":memory:", true)
-	newsStore := News{conn}
+	conn := sqlite3.Run(":memory:", true)
+	newsStore := sqlite3.News{conn}
 	is := is.New(t)
 	tgIds := []uuid.UUID{uuid.New(), uuid.New(), uuid.New()}
 
 	title := "news 1"
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
-	news := news.New(title, body, domain.Draft, tgIds)
+	news := news.Create(title, body, bareknews.Draft, tgIds)
 	err := newsStore.Save(context.TODO(), *news)
 	is.NoErr(err)
 
 	wantTitle := "news 2"
-	wantStatus := domain.Publish
+	wantStatus := bareknews.Publish
 	wantTags := []uuid.UUID{uuid.New(), uuid.New(), uuid.New(), uuid.New(), uuid.New()}
 
 	news.ChangeTitle(wantTitle)
@@ -67,8 +68,8 @@ func TestUpdateNews(t *testing.T) {
 }
 
 func TestDeleteNews(t *testing.T) {
-	conn := Run(":memory:", true)
-	newsStore := News{conn}
+	conn := sqlite3.Run(":memory:", true)
+	newsStore := sqlite3.News{conn}
 	is := is.New(t)
 
 	tgId := uuid.New()
@@ -76,7 +77,7 @@ func TestDeleteNews(t *testing.T) {
 	title := "news 1"
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
-	news := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
+	news := news.Create(title, body, bareknews.Draft, []uuid.UUID{tgId})
 	err := newsStore.Save(context.TODO(), *news)
 	is.NoErr(err)
 
@@ -88,8 +89,8 @@ func TestDeleteNews(t *testing.T) {
 }
 
 func TestGetByID(t *testing.T) {
-	conn := Run(":memory:", true)
-	newsStore := News{conn}
+	conn := sqlite3.Run(":memory:", true)
+	newsStore := sqlite3.News{conn}
 	is := is.New(t)
 
 	tgId := uuid.New()
@@ -97,7 +98,7 @@ func TestGetByID(t *testing.T) {
 	title := "news 1"
 	body := "Struct fields can also use tags to more specifically generate data for that field type."
 
-	want := news.New(title, body, domain.Draft, []uuid.UUID{tgId})
+	want := news.Create(title, body, bareknews.Draft, []uuid.UUID{tgId})
 	err := newsStore.Save(context.TODO(), *want)
 	is.NoErr(err)
 
@@ -113,15 +114,15 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestGetAllNews(t *testing.T) {
-	conn := Run("./../../bareknews.db", true)
-	newsStore := News{Conn: conn}
+	conn := sqlite3.Run("./../../bareknews.db", true)
+	newsStore := sqlite3.News{Conn: conn}
 
 	tgId := uuid.New()
 
 	title1 := "news 1"
 	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
 
-	wantNews1 := news.New(title1, body1, domain.Draft, []uuid.UUID{tgId})
+	wantNews1 := news.Create(title1, body1, bareknews.Draft, []uuid.UUID{tgId})
 	err := newsStore.Save(context.TODO(), *wantNews1)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -130,7 +131,7 @@ func TestGetAllNews(t *testing.T) {
 	title2 := "news 2"
 	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
 
-	wantNews2 := news.New(title2, body2, domain.Draft, []uuid.UUID{tgId})
+	wantNews2 := news.Create(title2, body2, bareknews.Draft, []uuid.UUID{tgId})
 	err = newsStore.Save(context.TODO(), *wantNews2)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -155,15 +156,15 @@ func TestGetAllNews(t *testing.T) {
 }
 
 func TestGetAllByTopic(t *testing.T) {
-	conn := Run("./../../bareknews.db", true)
-	newsStore := News{conn}
+	conn := sqlite3.Run("./../../bareknews.db", true)
+	newsStore := sqlite3.News{conn}
 
 	tgId := uuid.New()
 
 	title1 := "news 1"
 	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
 
-	wantNews1 := news.New(title1, body1, domain.Draft, []uuid.UUID{tgId})
+	wantNews1 := news.Create(title1, body1, bareknews.Draft, []uuid.UUID{tgId})
 	err := newsStore.Save(context.TODO(), *wantNews1)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -172,7 +173,7 @@ func TestGetAllByTopic(t *testing.T) {
 	title2 := "news 2"
 	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
 
-	wantNews2 := news.New(title2, body2, domain.Draft, []uuid.UUID{tgId})
+	wantNews2 := news.Create(title2, body2, bareknews.Draft, []uuid.UUID{tgId})
 	err = newsStore.Save(context.TODO(), *wantNews2)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -185,15 +186,15 @@ func TestGetAllByTopic(t *testing.T) {
 }
 
 func TestGetAllByStatus(t *testing.T) {
-	conn := Run("./../../bareknews.db", true)
-	newsStore := News{conn}
+	conn := sqlite3.Run("./../../bareknews.db", true)
+	newsStore := sqlite3.News{conn}
 
 	tgId := uuid.New()
 
 	title1 := "news 1"
 	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
 
-	wantNews1 := news.New(title1, body1, domain.Publish, []uuid.UUID{tgId})
+	wantNews1 := news.Create(title1, body1, bareknews.Publish, []uuid.UUID{tgId})
 	err := newsStore.Save(context.TODO(), *wantNews1)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -202,13 +203,13 @@ func TestGetAllByStatus(t *testing.T) {
 	title2 := "news 2"
 	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
 
-	wantNews2 := news.New(title2, body2, domain.Draft, []uuid.UUID{tgId})
+	wantNews2 := news.Create(title2, body2, bareknews.Draft, []uuid.UUID{tgId})
 	err = newsStore.Save(context.TODO(), *wantNews2)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	got, err := newsStore.GetAllByStatus(context.TODO(), domain.Publish)
+	got, err := newsStore.GetAllByStatus(context.TODO(), bareknews.Publish)
 	is := is.New(t)
 	is.NoErr(err)
 	is.Equal(len(got), 1)

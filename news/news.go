@@ -1,20 +1,20 @@
 package news
 
 import (
-	"github.com/Iiqbal2000/bareknews/domain"
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/google/uuid"
 )
 
 // News is an aggregate that represents a piece of news.
 type News struct {
-	Post   domain.Post
-	Status domain.Status
-	Slug   domain.Slug
+	Post   bareknews.Post
+	Status bareknews.Status
+	Slug   bareknews.Slug
 	TagsID []uuid.UUID
 }
 
-func New(title, body string, status domain.Status, tags []uuid.UUID) *News {
-	post := domain.Post{
+func Create(title, body string, status bareknews.Status, tags []uuid.UUID) *News {
+	post := bareknews.Post{
 		ID:    uuid.New(),
 		Title: title,
 		Body:  body,
@@ -23,7 +23,7 @@ func New(title, body string, status domain.Status, tags []uuid.UUID) *News {
 	return &News{
 		Post:   post,
 		Status: status,
-		Slug:   domain.NewSlug(post.Title),
+		Slug:   bareknews.NewSlug(post.Title),
 		TagsID: tags,
 	}
 }
@@ -46,10 +46,10 @@ func (n *News) ChangeTitle(newTitle string) {
 }
 
 func (n *News) changeSlug() {
-	n.Slug = domain.NewSlug(n.Post.Title)
+	n.Slug = bareknews.NewSlug(n.Post.Title)
 }
 
-func (n *News) ChangeStatus(newStatus domain.Status) {
+func (n *News) ChangeStatus(newStatus bareknews.Status) {
 	n.Status = newStatus
 }
 

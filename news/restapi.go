@@ -1,4 +1,4 @@
-package handler
+package news
 
 import (
 	"encoding/json"
@@ -6,13 +6,12 @@ import (
 	"net/http"
 
 	"github.com/Iiqbal2000/bareknews"
-	"github.com/Iiqbal2000/bareknews/services/posting"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
-type News struct {
-	Service posting.Service
+type Restapi struct {
+	Service Service
 }
 
 type InputNews struct {
@@ -22,7 +21,7 @@ type InputNews struct {
 	Body   string   `json:"body" validate:"required"`
 }
 
-func (n News) Route(r chi.Router) {
+func (n Restapi) Route(r chi.Router) {
 	r.Post("/", n.Create)
 	r.Get("/{newsId}", n.GetById)
 	r.Put("/{newsId}", n.Update)
@@ -42,7 +41,7 @@ func (n News) Route(r chi.Router) {
 // @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /news [post]
-func (n News) Create(w http.ResponseWriter, r *http.Request) {
+func (n Restapi) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	payloadIn := InputNews{}
@@ -88,7 +87,7 @@ func (n News) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /news/{id} [get]
-func (n News) GetById(w http.ResponseWriter, r *http.Request) {
+func (n Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
@@ -134,7 +133,7 @@ func (n News) GetById(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /news/{id} [put]
-func (n News) Update(w http.ResponseWriter, r *http.Request) {
+func (n Restapi) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
@@ -196,7 +195,7 @@ func (n News) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /news/{id} [delete]
-func (n News) Delete(w http.ResponseWriter, r *http.Request) {
+func (n Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
@@ -240,13 +239,13 @@ func (n News) Delete(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {object}  bareknews.RespBody{data=[]posting.Response} "Array of news body"
 // @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
 // @Router       /news [get]
-func (n News) GetAll(w http.ResponseWriter, r *http.Request) {
+func (n Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	q := r.URL.Query()
 	topic := q.Get("topic")
 	status := q.Get("status")
 
-	newsRes := make([]posting.Response, 0)
+	newsRes := make([]Response, 0)
 
 	switch {
 	case topic != "" && status != "":

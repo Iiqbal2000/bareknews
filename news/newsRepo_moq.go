@@ -5,7 +5,7 @@ package news
 
 import (
 	"context"
-	"github.com/Iiqbal2000/bareknews/domain"
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -29,7 +29,7 @@ var _ Repository = &RepositoryMock{}
 // 			GetAllFunc: func(contextMoqParam context.Context) ([]News, error) {
 // 				panic("mock out the GetAll method")
 // 			},
-// 			GetAllByStatusFunc: func(ctx context.Context, status domain.Status) ([]News, error) {
+// 			GetAllByStatusFunc: func(ctx context.Context, status bareknews.Status) ([]News, error) {
 // 				panic("mock out the GetAllByStatus method")
 // 			},
 // 			GetAllByTopicFunc: func(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error) {
@@ -61,7 +61,7 @@ type RepositoryMock struct {
 	GetAllFunc func(contextMoqParam context.Context) ([]News, error)
 
 	// GetAllByStatusFunc mocks the GetAllByStatus method.
-	GetAllByStatusFunc func(ctx context.Context, status domain.Status) ([]News, error)
+	GetAllByStatusFunc func(ctx context.Context, status bareknews.Status) ([]News, error)
 
 	// GetAllByTopicFunc mocks the GetAllByTopic method.
 	GetAllByTopicFunc func(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error)
@@ -101,7 +101,7 @@ type RepositoryMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Status is the status argument value.
-			Status domain.Status
+			Status bareknews.Status
 		}
 		// GetAllByTopic holds details about calls to the GetAllByTopic method.
 		GetAllByTopic []struct {
@@ -244,13 +244,13 @@ func (mock *RepositoryMock) GetAllCalls() []struct {
 }
 
 // GetAllByStatus calls GetAllByStatusFunc.
-func (mock *RepositoryMock) GetAllByStatus(ctx context.Context, status domain.Status) ([]News, error) {
+func (mock *RepositoryMock) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]News, error) {
 	if mock.GetAllByStatusFunc == nil {
 		panic("RepositoryMock.GetAllByStatusFunc: method is nil but Repository.GetAllByStatus was just called")
 	}
 	callInfo := struct {
 		Ctx    context.Context
-		Status domain.Status
+		Status bareknews.Status
 	}{
 		Ctx:    ctx,
 		Status: status,
@@ -266,11 +266,11 @@ func (mock *RepositoryMock) GetAllByStatus(ctx context.Context, status domain.St
 //     len(mockedRepository.GetAllByStatusCalls())
 func (mock *RepositoryMock) GetAllByStatusCalls() []struct {
 	Ctx    context.Context
-	Status domain.Status
+	Status bareknews.Status
 } {
 	var calls []struct {
 		Ctx    context.Context
-		Status domain.Status
+		Status bareknews.Status
 	}
 	mock.lockGetAllByStatus.RLock()
 	calls = mock.calls.GetAllByStatus

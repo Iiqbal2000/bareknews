@@ -1,12 +1,11 @@
-package storage
+package sqlite3
 
 import (
 	"context"
 	"database/sql"
 
 	"github.com/Iiqbal2000/bareknews"
-	"github.com/Iiqbal2000/bareknews/domain"
-	"github.com/Iiqbal2000/bareknews/domain/tags"
+	"github.com/Iiqbal2000/bareknews/tags"
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/mattn/go-sqlite3"
@@ -77,8 +76,8 @@ func (t Tag) GetById(ctx context.Context, id uuid.UUID) (*tags.Tags, error) {
 	query, args := builder.Build()
 	row := t.Conn.QueryRowContext(ctx, query, args...)
 
-	label := domain.Label{}
-	var slug domain.Slug
+	label := bareknews.Label{}
+	var slug bareknews.Slug
 	err := row.Scan(&label.ID, &label.Name, &slug)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -121,8 +120,8 @@ func (t Tag) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, error)
 	results := make([]tags.Tags, 0)
 
 	for rows.Next() {
-		label := domain.Label{}
-		var slug domain.Slug
+		label := bareknews.Label{}
+		var slug bareknews.Slug
 		err := rows.Scan(&label.ID, &label.Name, &slug)
 		if err != nil {
 			return []tags.Tags{}, errors.Wrap(err, "storage.tags.getByIds")
@@ -156,8 +155,8 @@ func (t Tag) GetAll(ctx context.Context) ([]tags.Tags, error) {
 	results := make([]tags.Tags, 0)
 
 	for rows.Next() {
-		label := domain.Label{}
-		var slug domain.Slug
+		label := bareknews.Label{}
+		var slug bareknews.Slug
 		err := rows.Scan(&label.ID, &label.Name, &slug)
 		if err != nil {
 			return []tags.Tags{}, errors.Wrap(err, "storage.tags.getAll")
@@ -215,8 +214,8 @@ func (t Tag) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, erro
 	results := make([]tags.Tags, 0)
 
 	for rows.Next() {
-		label := domain.Label{}
-		var slug domain.Slug
+		label := bareknews.Label{}
+		var slug bareknews.Slug
 		err := rows.Scan(&label.ID, &label.Name, &slug)
 		if err != nil {
 			return []tags.Tags{}, errors.Wrap(err, "storage.tags.getByNames")

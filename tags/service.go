@@ -1,4 +1,4 @@
-package tagging
+package tags
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/Iiqbal2000/bareknews"
-	"github.com/Iiqbal2000/bareknews/domain/tags"
 	"github.com/google/uuid"
 )
 
@@ -18,15 +17,15 @@ type Response struct {
 }
 
 type Service struct {
-	storage tags.Repository
+	storage Repository
 }
 
-func New(repo tags.Repository) Service {
+func CreateSvc(repo Repository) Service {
 	return Service{repo}
 }
 
 func (s Service) Create(ctx context.Context, tagName string) (Response, error) {
-	tag := tags.New(strings.TrimSpace(tagName))
+	tag := Create(strings.TrimSpace(tagName))
 
 	err := tag.Validate()
 	if err != nil {

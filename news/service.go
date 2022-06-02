@@ -1,4 +1,4 @@
-package posting
+package news
 
 import (
 	"context"
@@ -7,27 +7,25 @@ import (
 	"strings"
 
 	"github.com/Iiqbal2000/bareknews"
-	"github.com/Iiqbal2000/bareknews/domain"
-	"github.com/Iiqbal2000/bareknews/domain/news"
-	"github.com/Iiqbal2000/bareknews/services/tagging"
+	"github.com/Iiqbal2000/bareknews/tags"
 	"github.com/google/uuid"
 )
 
 type Response struct {
-	ID     uuid.UUID          `json:"id"`
-	Title  string             `json:"title"`
-	Body   string             `json:"body"`
-	Status string             `json:"status"`
-	Slug   string             `json:"slug"`
-	Tags   []tagging.Response `json:"tags"`
+	ID     uuid.UUID       `json:"id"`
+	Title  string          `json:"title"`
+	Body   string          `json:"body"`
+	Status string          `json:"status"`
+	Slug   string          `json:"slug"`
+	Tags   []tags.Response `json:"tags"`
 }
 
 type Service struct {
-	storage    news.Repository
-	taggingSvc tagging.Service
+	storage    Repository
+	taggingSvc tags.Service
 }
 
-func New(repo news.Repository, taggingSvc tagging.Service) Service {
+func CreateSvc(repo Repository, taggingSvc tags.Service) Service {
 	return Service{repo, taggingSvc}
 }
 
@@ -40,7 +38,7 @@ func (s Service) Create(ctx context.Context, title, body, status string, tagsIn 
 		tgId = append(tgId, t.ID)
 	}
 
-	news := news.New(title, body, domain.Status(status), tgId)
+	news := Create(title, body, bareknews.Status(status), tgId)
 	err := news.Validate()
 	if err != nil {
 		return Response{}, err
@@ -80,7 +78,7 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, title, body, status s
 	}
 
 	if status != "" && strings.TrimSpace(status) != "" {
-		news.ChangeStatus(domain.Status(status))
+		news.ChangeStatus(bareknews.Status(status))
 	}
 
 	if len(tgIn) > 0 {
@@ -193,7 +191,7 @@ func (s Service) GetAll(ctx context.Context) ([]Response, error) {
 
 func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]Response, error) {
 	tg := s.taggingSvc.GetByNames(ctx, []string{topic})
-	
+
 	nws, err := s.storage.GetAllByTopic(ctx, tg[0].ID)
 	if err != nil {
 		return []Response{}, err
@@ -221,7 +219,7 @@ func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]Response, e
 }
 
 func (s Service) GetAllByStatus(ctx context.Context, status string) ([]Response, error) {
-	stat := domain.Status(status)
+	stat := bareknews.Status(status)
 	err := stat.Validate()
 	if err != nil {
 		return []Response{}, err

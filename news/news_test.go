@@ -3,8 +3,8 @@ package news_test
 import (
 	"testing"
 
-	"github.com/Iiqbal2000/bareknews/domain"
-	"github.com/Iiqbal2000/bareknews/domain/news"
+	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/news"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 )
@@ -12,10 +12,10 @@ import (
 func TestCreateNews(t *testing.T) {
 	t.Run("success creates a news", func(t *testing.T) {
 		title := "Test 1"
-		slug := domain.Slug("test-1")
+		slug := bareknews.Slug("test-1")
 		body := "testing"
 		tagid := uuid.New()
-		news := news.New(title, body, domain.Draft, []uuid.UUID{tagid})
+		news := news.Create(title, body, bareknews.Draft, []uuid.UUID{tagid})
 
 		err := news.Validate()
 
@@ -23,14 +23,14 @@ func TestCreateNews(t *testing.T) {
 		is.NoErr(err)
 		is.Equal(news.Post.Title, title)
 		is.Equal(news.Post.Body, body)
-		is.Equal(news.Status, domain.Draft)
+		is.Equal(news.Status, bareknews.Draft)
 		is.Equal(news.Slug, slug)
 	})
 
 	t.Run("with invalid title should return an error", func(t *testing.T) {
 		body := "testing"
 		tagid := uuid.New()
-		news := news.New("", body, domain.Draft, []uuid.UUID{tagid})
+		news := news.Create("", body, bareknews.Draft, []uuid.UUID{tagid})
 
 		err := news.Validate()
 
@@ -41,7 +41,7 @@ func TestCreateNews(t *testing.T) {
 	t.Run("with invalid status should return an error", func(t *testing.T) {
 		body := "testing"
 		tagid := uuid.New()
-		news := news.New("invalid status", body, "", []uuid.UUID{tagid})
+		news := news.Create("invalid status", body, "", []uuid.UUID{tagid})
 
 		err := news.Validate()
 
@@ -52,9 +52,9 @@ func TestCreateNews(t *testing.T) {
 
 func TestChangeTitle(t *testing.T) {
 	tagId := uuid.New()
-	news := news.New("Test 1", "testing", domain.Draft, []uuid.UUID{tagId})
+	news := news.Create("Test 1", "testing", bareknews.Draft, []uuid.UUID{tagId})
 	err := news.Validate()
-	
+
 	is := is.New(t)
 	is.NoErr(err)
 
@@ -62,12 +62,12 @@ func TestChangeTitle(t *testing.T) {
 	err = news.Validate()
 	is.NoErr(err)
 	is.Equal(news.Post.Title, "Test 2")
-	is.Equal(news.Slug, domain.Slug("test-2"))
+	is.Equal(news.Slug, bareknews.Slug("test-2"))
 }
 
 func TestChangeBody(t *testing.T) {
 	tagId := uuid.New()
-	news := news.New("Test 1", "testing", domain.Draft, []uuid.UUID{tagId})
+	news := news.Create("Test 1", "testing", bareknews.Draft, []uuid.UUID{tagId})
 	err := news.Validate()
 
 	is := is.New(t)
@@ -81,26 +81,26 @@ func TestChangeBody(t *testing.T) {
 
 func TestChangeStatus(t *testing.T) {
 	tagId := uuid.New()
-	news := news.New("Test 1", "testing", domain.Draft, []uuid.UUID{tagId})
+	news := news.Create("Test 1", "testing", bareknews.Draft, []uuid.UUID{tagId})
 	err := news.Validate()
 
 	is := is.New(t)
 	is.NoErr(err)
 
-	news.ChangeStatus(domain.Publish)
+	news.ChangeStatus(bareknews.Publish)
 	err = news.Validate()
 	is.NoErr(err)
-	is.Equal(news.Status, domain.Publish)
+	is.Equal(news.Status, bareknews.Publish)
 }
 
 func TestChangeTags(t *testing.T) {
 	tagId := uuid.New()
-	news := news.New("Test 1", "testing", domain.Draft, []uuid.UUID{tagId})
+	news := news.Create("Test 1", "testing", bareknews.Draft, []uuid.UUID{tagId})
 	err := news.Validate()
 
 	is := is.New(t)
 	is.NoErr(err)
-	
+
 	newTag := uuid.New()
 
 	news.ChangeTags([]uuid.UUID{newTag})

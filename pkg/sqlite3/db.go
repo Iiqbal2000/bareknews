@@ -1,4 +1,4 @@
-package storage
+package sqlite3
 
 import (
 	"database/sql"

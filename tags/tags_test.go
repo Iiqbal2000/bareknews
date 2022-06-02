@@ -3,13 +3,13 @@ package tags_test
 import (
 	"testing"
 
-	"github.com/Iiqbal2000/bareknews/domain/tags"
+	"github.com/Iiqbal2000/bareknews/tags"
 	"github.com/matryer/is"
 )
 
 func TestNewTags(t *testing.T) {
 	t.Run("Valid tags", func(t *testing.T) {
-		tag := tags.New("tag 1")
+		tag := tags.Create("tag 1")
 		err := tag.Validate()
 		is := is.New(t)
 		is.NoErr(err)
@@ -19,7 +19,7 @@ func TestNewTags(t *testing.T) {
 	})
 
 	t.Run("Invalid tags", func(t *testing.T) {
-		tag := tags.New("")
+		tag := tags.Create("")
 		err := tag.Validate()
 		is := is.New(t)
 		is.True(err != nil)
@@ -29,7 +29,7 @@ func TestNewTags(t *testing.T) {
 func TestChangeNameTags(t *testing.T) {
 	t.Run("Valid change", func(t *testing.T) {
 		is := is.New(t)
-		tag := tags.New("tag1")
+		tag := tags.Create("tag1")
 		err := tag.Validate()
 		is.NoErr(err)
 
@@ -44,7 +44,7 @@ func TestChangeNameTags(t *testing.T) {
 
 	t.Run("Invalid change", func(t *testing.T) {
 		is := is.New(t)
-		tag := tags.New("tag1")
+		tag := tags.Create("tag1")
 		err := tag.Validate()
 		is.NoErr(err)
 

@@ -1,12 +1,11 @@
-package storage
+package sqlite3
 
 import (
 	"context"
 	"database/sql"
 
 	"github.com/Iiqbal2000/bareknews"
-	"github.com/Iiqbal2000/bareknews/domain"
-	"github.com/Iiqbal2000/bareknews/domain/news"
+	"github.com/Iiqbal2000/bareknews/news"
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/mattn/go-sqlite3"
@@ -67,9 +66,9 @@ func (s News) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
 
 	query, args := builder.Build()
 	row := s.Conn.QueryRowContext(ctx, query, args...)
-	post := domain.Post{}
-	slug := new(domain.Slug)
-	status := new(domain.Status)
+	post := bareknews.Post{}
+	slug := new(bareknews.Slug)
+	status := new(bareknews.Status)
 	err := row.Scan(&post.ID, &post.Title, status, &post.Body, slug)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -201,9 +200,9 @@ func (s News) GetAll(ctx context.Context) ([]news.News, error) {
 	postIds := make([]uuid.UUID, 0)
 
 	for rows.Next() {
-		post := domain.Post{}
-		slug := new(domain.Slug)
-		status := new(domain.Status)
+		post := bareknews.Post{}
+		slug := new(bareknews.Slug)
+		status := new(bareknews.Status)
 		err = rows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "storage.news.getAll")
@@ -269,9 +268,9 @@ func (s News) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News, 
 	postIds := make([]uuid.UUID, 0)
 
 	for newsRows.Next() {
-		post := domain.Post{}
-		slug := new(domain.Slug)
-		status := new(domain.Status)
+		post := bareknews.Post{}
+		slug := new(bareknews.Slug)
+		status := new(bareknews.Status)
 		err = newsRows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "storage.news.getAllByTopic")
@@ -307,7 +306,7 @@ func (s News) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News, 
 	return newsResult, nil
 }
 
-func (s News) GetAllByStatus(ctx context.Context, status domain.Status) ([]news.News, error) {
+func (s News) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]news.News, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select("id", "title", "status", "body", "slug")
 	builder.From("news")
@@ -325,9 +324,9 @@ func (s News) GetAllByStatus(ctx context.Context, status domain.Status) ([]news.
 	postIds := make([]uuid.UUID, 0)
 
 	for newsRows.Next() {
-		post := domain.Post{}
-		slug := new(domain.Slug)
-		status := new(domain.Status)
+		post := bareknews.Post{}
+		slug := new(bareknews.Slug)
+		status := new(bareknews.Status)
 
 		err = newsRows.Scan(
 			&post.ID,

@@ -1,23 +1,23 @@
 package tags
 
 import (
-	"github.com/Iiqbal2000/bareknews/domain"
+	"github.com/Iiqbal2000/bareknews"
 	"github.com/google/uuid"
 )
 
 // Tags is an aggregrate that represent a tag
 type Tags struct {
-	Label domain.Label
-	Slug  domain.Slug
+	Label bareknews.Label
+	Slug  bareknews.Slug
 }
 
-func New(tagName string) *Tags {
+func Create(tagName string) *Tags {
 	tag := Tags{
-		Label: domain.Label{
+		Label: bareknews.Label{
 			ID:   uuid.New(),
 			Name: tagName,
 		},
-		Slug: domain.NewSlug(tagName),
+		Slug: bareknews.NewSlug(tagName),
 	}
 
 	return &tag
@@ -25,7 +25,7 @@ func New(tagName string) *Tags {
 
 func (t *Tags) ChangeName(newName string) {
 	t.Label.Name = newName
-	t.Slug = domain.NewSlug(newName)
+	t.Slug = bareknews.NewSlug(newName)
 }
 
 func (t Tags) Validate() error {
