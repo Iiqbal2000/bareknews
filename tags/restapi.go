@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/pkg/restapi"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -45,7 +46,7 @@ func (t Restapi) Create(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrInvalidJSON)
+		err = restapi.WriteErrResponse(w, bareknews.ErrInvalidJSON)
 		if err != nil {
 			log.Println("(error) tags.handler.create: ", err.Error())
 		}
@@ -54,7 +55,7 @@ func (t Restapi) Create(w http.ResponseWriter, r *http.Request) {
 
 	tagRes, err := t.Service.Create(ctx, payload.Name)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
 			log.Println("(error) tags.handler.create: ", err.Error())
 		}
@@ -89,7 +90,7 @@ func (t Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 	rawId := chi.URLParam(r, "tagId")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrDataNotFound)
+		err = restapi.WriteErrResponse(w, bareknews.ErrDataNotFound)
 		if err != nil {
 			log.Println("(error) tags.handler.getById: ", err.Error())
 		}
@@ -98,7 +99,7 @@ func (t Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 
 	tg, err := t.Service.GetById(ctx, id)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
 			log.Println("(error) tags.handler.getById: ", err.Error())
 		}
@@ -136,7 +137,7 @@ func (t Restapi) Update(w http.ResponseWriter, r *http.Request) {
 	rawId := chi.URLParam(r, "tagId")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrDataNotFound)
+		err = restapi.WriteErrResponse(w, bareknews.ErrDataNotFound)
 		if err != nil {
 			log.Println("(error) tags.handler.update: ", err.Error())
 		}
@@ -147,7 +148,7 @@ func (t Restapi) Update(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrInvalidJSON)
+		err = restapi.WriteErrResponse(w, bareknews.ErrInvalidJSON)
 		if err != nil {
 			log.Println("(error) tags.handler.update: ", err.Error())
 		}
@@ -156,7 +157,7 @@ func (t Restapi) Update(w http.ResponseWriter, r *http.Request) {
 
 	tg, err := t.Service.Update(ctx, id, payload.Name)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
 			log.Println("(error) tags.handler.update: ", err.Error())
 		}
@@ -189,7 +190,7 @@ func (t Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tgs, err := t.Service.GetAll(ctx)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
 			log.Println("(error) tags.handler.getAll: ", err.Error())
 		}
@@ -226,7 +227,7 @@ func (t Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 	rawId := chi.URLParam(r, "tagId")
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrDataNotFound)
+		err = restapi.WriteErrResponse(w, bareknews.ErrDataNotFound)
 		if err != nil {
 			log.Println("(error) tags.handler.delete: ", err.Error())
 		}
@@ -235,7 +236,7 @@ func (t Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err = t.Service.Delete(ctx, id)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
 			log.Println("(error) tags.handler.delete: ", err.Error())
 		}
