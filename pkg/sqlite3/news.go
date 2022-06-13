@@ -478,7 +478,6 @@ func (s News) getNewsTagsIds(ctx context.Context, newsIds []uuid.UUID) (map[uuid
 		if elem, ok := idsBatch[newsId]; ok {
 			elem = append(elem, tagId)
 		} else {
-			// idsBatch[newsId] = []uuid.UUID{}
 			idsBatch[newsId] = append(idsBatch[newsId], tagId)
 		}
 	}
