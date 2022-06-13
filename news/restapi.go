@@ -37,10 +37,10 @@ func (n Restapi) Route(r chi.Router) {
 // @Accept       json
 // @Produce      json
 // @Param news body InputNews true "A payload of new news"
-// @Success      201  {object}  bareknews.RespBody{data=posting.Response} "Response body for a new news"
-// @Failure      400  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      201  {object}  restapi.RespBody{data=posting.Response} "Response body for a new news"
+// @Failure      400  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /news [post]
 func (n Restapi) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -65,7 +65,7 @@ func (n Restapi) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := bareknews.RespBody{
+	payloadRes := restapi.RespBody{
 		Message: "Successfully creating a news",
 		Data:    nws,
 	}
@@ -84,9 +84,9 @@ func (n Restapi) Create(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        id   path      string  true  "News ID"  Format(uuid)
-// @Success      200  {object}  bareknews.RespBody{data=posting.Response} "Response body for a news"
-// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      200  {object}  restapi.RespBody{data=posting.Response} "Response body for a news"
+// @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /news/{id} [get]
 func (n Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -109,7 +109,7 @@ func (n Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := bareknews.RespBody{
+	payloadRes := restapi.RespBody{
 		Message: "Successfully getting a news",
 		Data:    nws,
 	}
@@ -129,10 +129,10 @@ func (n Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        id   path      string  true  "News ID"  Format(uuid)
 // @Param news body InputNews true "A payload of new news"
-// @Success      200  {object}  bareknews.RespBody{data=posting.Response} "Response body for a new news"
-// @Failure      400  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      200  {object}  restapi.RespBody{data=posting.Response} "Response body for a new news"
+// @Failure      400  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /news/{id} [put]
 func (n Restapi) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -173,7 +173,7 @@ func (n Restapi) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := bareknews.RespBody{
+	payloadRes := restapi.RespBody{
 		Message: "Successfully updating a news",
 		Data:    nws,
 	}
@@ -192,9 +192,9 @@ func (n Restapi) Update(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        id   path      string  true  "News ID"  Format(uuid)
-// @Success      200  {object}  bareknews.RespBody{data=object}
-// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      200  {object}  restapi.RespBody{data=object}
+// @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /news/{id} [delete]
 func (n Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -237,8 +237,8 @@ func (n Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param   topic      query     string     false  "a topic"
 // @Param   status      query     string     false  "status of the news"	Enums(draft, publish)
-// @Success      200  {object}  bareknews.RespBody{data=[]posting.Response} "Array of news body"
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      200  {object}  restapi.RespBody{data=[]posting.Response} "Array of news body"
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /news [get]
 func (n Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -299,7 +299,7 @@ func (n Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 		newsRes = append(newsRes, nws...)
 	}
 
-	payloadRes := bareknews.RespBody{
+	payloadRes := restapi.RespBody{
 		Message: "Successfuly getting all news",
 		Data:    newsRes,
 	}

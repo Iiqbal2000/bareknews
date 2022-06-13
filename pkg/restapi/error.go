@@ -25,7 +25,7 @@ func WriteErrResponse(w http.ResponseWriter, err error) error {
 	}
 
 	return json.NewEncoder(w).Encode(
-		bareknews.ErrRespBody{
+		ErrRespBody{
 			Err: map[string]interface{}{
 				"message": err.Error(),
 			},

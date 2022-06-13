@@ -34,10 +34,10 @@ func (t Restapi) Route(r chi.Router) {
 // @Accept       json
 // @Produce      json
 // @Param tag body InputTag true "A payload of new tag"
-// @Success      201  {object}  bareknews.RespBody{data=tagging.Response} "Response body for a new tag"
-// @Failure      400  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      201  {object}  restapi.RespBody{data=tagging.Response} "Response body for a new tag"
+// @Failure      400  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /tags [post]
 func (t Restapi) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -62,7 +62,7 @@ func (t Restapi) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := bareknews.RespBody{
+	payloadRes := restapi.RespBody{
 		Message: "Successfully creating a tag",
 		Data: tagRes,
 	}
@@ -81,9 +81,9 @@ func (t Restapi) Create(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        id   path      string  true  "Tag ID"  Format(uuid)
-// @Success      200  {object}  bareknews.RespBody{data=tagging.Response} "Response body for a tag"
-// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      200  {object}  restapi.RespBody{data=tagging.Response} "Response body for a tag"
+// @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /tags/{id} [get]
 func (t Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -106,7 +106,7 @@ func (t Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := bareknews.RespBody{
+	payloadRes := restapi.RespBody{
 		Message: "Successfully getting a tag",
 		Data: tg,
 	}
@@ -127,10 +127,10 @@ func (t Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        id   path      string  true  "Tag ID"  Format(uuid)
 // @Param tag body InputTag true "A payload of new tag"
-// @Success      200  {object}  bareknews.RespBody{data=tagging.Response} "Response body for a new tag"
-// @Failure      400  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      200  {object}  restapi.RespBody{data=tagging.Response} "Response body for a new tag"
+// @Failure      400  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /tags/{id} [put]
 func (t Restapi) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -164,7 +164,7 @@ func (t Restapi) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := bareknews.RespBody{
+	payloadRes := restapi.RespBody{
 		Message: "Successfully updating a tag",
 		Data: tg,
 	}
@@ -183,8 +183,8 @@ func (t Restapi) Update(w http.ResponseWriter, r *http.Request) {
 // @Tags         tags
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  bareknews.RespBody{data=[]tagging.Response} "Array of tag body"
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      200  {object}  restapi.RespBody{data=[]tagging.Response} "Array of tag body"
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /tags [get]
 func (t Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -197,7 +197,7 @@ func (t Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := bareknews.RespBody{
+	payloadRes := restapi.RespBody{
 		Message: "Successfully getting all tags",
 		Data: tgs,
 	}
@@ -217,9 +217,9 @@ func (t Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        id   path      string  true  "Tag ID"  Format(uuid)
-// @Success      200  {object}  bareknews.RespBody{data=object}
-// @Failure      404  {object}  bareknews.ErrRespBody{error=object{message=string}}
-// @Failure      500  {object}  bareknews.ErrRespBody{error=object{message=string}}
+// @Success      200  {object}  restapi.RespBody{data=object}
+// @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
+// @Failure      500  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Router       /tags/{id} [delete]
 func (t Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -243,7 +243,7 @@ func (t Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadRes := bareknews.RespBody{
+	payloadRes := restapi.RespBody{
 		Message: "Successfully deleting a tag",
 		Data: struct{}{},
 	}

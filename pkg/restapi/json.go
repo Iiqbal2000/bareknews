@@ -1,4 +1,4 @@
-package bareknews
+package restapi
 
 // RespBody represents the common response body for JSON type.
 type RespBody struct {
