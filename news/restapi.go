@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Iiqbal2000/bareknews"
+	"github.com/Iiqbal2000/bareknews/pkg/restapi"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -48,7 +49,7 @@ func (n Restapi) Create(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&payloadIn)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrInvalidJSON)
+		err = restapi.WriteErrResponse(w, bareknews.ErrInvalidJSON)
 		if err != nil {
 			log.Println("(error) news.handler.create: ", err.Error())
 		}
@@ -57,7 +58,7 @@ func (n Restapi) Create(w http.ResponseWriter, r *http.Request) {
 
 	nws, err := n.Service.Create(ctx, payloadIn.Title, payloadIn.Body, payloadIn.Status, payloadIn.Tags)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
 			log.Println("(error) news.handler.create: ", err.Error())
 		}
@@ -92,7 +93,7 @@ func (n Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrDataNotFound)
+		err = restapi.WriteErrResponse(w, bareknews.ErrDataNotFound)
 		if err != nil {
 			log.Println("(error) news.handler.getById: ", err.Error())
 		}
@@ -101,7 +102,7 @@ func (n Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 
 	nws, err := n.Service.GetById(ctx, id)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
 			log.Println("(error) news.handler.getById: ", err.Error())
 		}
@@ -138,7 +139,7 @@ func (n Restapi) Update(w http.ResponseWriter, r *http.Request) {
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrDataNotFound)
+		err = restapi.WriteErrResponse(w, bareknews.ErrDataNotFound)
 		if err != nil {
 			log.Println("(error) news.handler.update: ", err.Error())
 		}
@@ -149,7 +150,7 @@ func (n Restapi) Update(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&payloadIn)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrInvalidJSON)
+		err = restapi.WriteErrResponse(w, bareknews.ErrInvalidJSON)
 		if err != nil {
 			log.Println("(error) news.handler.update: ", err.Error())
 		}
@@ -165,7 +166,7 @@ func (n Restapi) Update(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
 			log.Println("(error) news.handler.update: ", err.Error())
 		}
@@ -200,7 +201,7 @@ func (n Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, bareknews.ErrDataNotFound)
+		err = restapi.WriteErrResponse(w, bareknews.ErrDataNotFound)
 		if err != nil {
 			log.Println("(error) news.handler.delete: ", err.Error())
 		}
@@ -209,7 +210,7 @@ func (n Restapi) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err = n.Service.Delete(ctx, id)
 	if err != nil {
-		err = bareknews.WriteErrResponse(w, err)
+		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
 			log.Println("(error) news.handler.delete: ", err.Error())
 		}
@@ -251,7 +252,7 @@ func (n Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	case topic != "" && status != "":
 		nws, err := n.Service.GetAllByTopic(ctx, topic)
 		if err != nil {
-			err = bareknews.WriteErrResponse(w, err)
+			err = restapi.WriteErrResponse(w, err)
 			if err != nil {
 				log.Println("(error) news.handler.getAll: ", err.Error())
 			}
@@ -266,7 +267,7 @@ func (n Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	case topic == "" && status != "":
 		nws, err := n.Service.GetAllByStatus(ctx, status)
 		if err != nil {
-			err = bareknews.WriteErrResponse(w, err)
+			err = restapi.WriteErrResponse(w, err)
 			if err != nil {
 				log.Println("(error) news.handler.getAll: ", err.Error())
 			}
@@ -277,7 +278,7 @@ func (n Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	case topic != "" && status == "":
 		nws, err := n.Service.GetAllByTopic(ctx, topic)
 		if err != nil {
-			err = bareknews.WriteErrResponse(w, err)
+			err = restapi.WriteErrResponse(w, err)
 			if err != nil {
 				log.Println("(error) news.handler.getAll: ", err.Error())
 			}
@@ -288,7 +289,7 @@ func (n Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	default:
 		nws, err := n.Service.GetAll(ctx)
 		if err != nil {
-			err = bareknews.WriteErrResponse(w, err)
+			err = restapi.WriteErrResponse(w, err)
 			if err != nil {
 				log.Println("(error) news.handler.getAll: ", err.Error())
 			}
