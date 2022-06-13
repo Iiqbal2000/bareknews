@@ -13,11 +13,11 @@ var (
 	)
 	ErrDataNotFound = validation.NewError(
 		"data_not_found",
-		"the data not found",
+		"the data is not found",
 	)
 	ErrInvalidJSON = validation.NewError(
 		"invalid_json",
-		"the syntax JSON is invalid",
+		"the JSON syntax is invalid",
 	)
 )
 
