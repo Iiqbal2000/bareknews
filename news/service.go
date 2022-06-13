@@ -20,6 +20,17 @@ type Response struct {
 	Tags   []tags.Response `json:"tags"`
 }
 
+func createResponse(n *News, tgs []tags.Response) Response {
+	return Response{
+		ID:     n.Post.ID,
+		Title:  n.Post.Title,
+		Body:   n.Post.Body,
+		Status: n.Status.String(),
+		Slug:   n.Slug.String(),
+		Tags:   tgs,
+	}
+}
+
 type Service struct {
 	storage    Repository
 	taggingSvc tags.Service
@@ -49,14 +60,7 @@ func (s Service) Create(ctx context.Context, title, body, status string, tagsIn 
 		return Response{}, err
 	}
 
-	return Response{
-		ID:     news.Post.ID,
-		Title:  news.Post.Title,
-		Body:   news.Post.Body,
-		Status: news.Status.String(),
-		Slug:   news.Slug.String(),
-		Tags:   tg,
-	}, nil
+	return createResponse(news, tg), nil
 }
 
 func (s Service) Update(ctx context.Context, id uuid.UUID, title, body, status string, tgIn []string) (Response, error) {
@@ -107,14 +111,7 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, title, body, status s
 		return Response{}, err
 	}
 
-	return Response{
-		ID:     news.Post.ID,
-		Title:  news.Post.Title,
-		Body:   news.Post.Body,
-		Status: news.Status.String(),
-		Slug:   news.Slug.String(),
-		Tags:   tg,
-	}, nil
+	return createResponse(news, tg), nil
 }
 
 func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
@@ -136,7 +133,7 @@ func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s Service) GetById(ctx context.Context, id uuid.UUID) (Response, error) {
-	result, err := s.storage.GetById(ctx, id)
+	news, err := s.storage.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
@@ -145,21 +142,12 @@ func (s Service) GetById(ctx context.Context, id uuid.UUID) (Response, error) {
 		}
 	}
 
-	tgs, err := s.taggingSvc.GetByIds(ctx, result.TagsID)
+	tgs, err := s.taggingSvc.GetByIds(ctx, news.TagsID)
 	if err != nil {
 		return Response{}, err
 	}
 
-	r := Response{
-		ID:     result.Post.ID,
-		Title:  result.Post.Title,
-		Body:   result.Post.Body,
-		Status: result.Status.String(),
-		Slug:   result.Slug.String(),
-		Tags:   tgs,
-	}
-
-	return r, nil
+	return createResponse(news, tgs), nil
 }
 
 func (s Service) GetAll(ctx context.Context) ([]Response, error) {
@@ -176,14 +164,7 @@ func (s Service) GetAll(ctx context.Context) ([]Response, error) {
 			return []Response{}, err
 		}
 
-		r = append(r, Response{
-			ID:     nw.Post.ID,
-			Title:  nw.Post.Title,
-			Body:   nw.Post.Body,
-			Status: nw.Status.String(),
-			Slug:   nw.Slug.String(),
-			Tags:   tgs,
-		})
+		r = append(r, createResponse(&nw, tgs))
 	}
 
 	return r, nil
@@ -205,14 +186,7 @@ func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]Response, e
 			return []Response{}, err
 		}
 
-		r = append(r, Response{
-			ID:     nw.Post.ID,
-			Title:  nw.Post.Title,
-			Body:   nw.Post.Body,
-			Status: nw.Status.String(),
-			Slug:   nw.Slug.String(),
-			Tags:   tgs,
-		})
+		r = append(r, createResponse(&nw, tgs))
 	}
 
 	return r, nil
@@ -238,14 +212,7 @@ func (s Service) GetAllByStatus(ctx context.Context, status string) ([]Response,
 			return []Response{}, err
 		}
 
-		r = append(r, Response{
-			ID:     nw.Post.ID,
-			Title:  nw.Post.Title,
-			Body:   nw.Post.Body,
-			Status: nw.Status.String(),
-			Slug:   nw.Slug.String(),
-			Tags:   tgs,
-		})
+		r = append(r, createResponse(&nw, tgs))
 	}
 
 	return r, nil
