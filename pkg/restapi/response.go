@@ -10,6 +10,17 @@ import (
 	"github.com/pkg/errors"
 )
 
+// RespBody represents the common response body for JSON type.
+type RespBody struct {
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+// ErrRespBody represents an error response body for JSON type.
+type ErrRespBody struct {
+	Err map[string]interface{} `json:"error" swaggertype:"object"`
+}
+
 func WriteErrResponse(w http.ResponseWriter, err error) error {
 	switch errors.Cause(err).(type) {
 	case validation.Errors, validation.Error:
