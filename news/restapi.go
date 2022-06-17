@@ -15,13 +15,6 @@ type Restapi struct {
 	Service Service
 }
 
-type InputNews struct {
-	Title  string   `json:"title" validate:"required"`
-	Status string   `json:"status" enums:"publish,draft" default:"draft"`
-	Tags   []string `json:"tags"`
-	Body   string   `json:"body" validate:"required"`
-}
-
 func (n Restapi) Route(r chi.Router) {
 	r.Post("/", n.Create)
 	r.Get("/{newsId}", n.GetById)
@@ -36,7 +29,7 @@ func (n Restapi) Route(r chi.Router) {
 // @Tags         news
 // @Accept       json
 // @Produce      json
-// @Param news body InputNews true "A payload of new news"
+// @Param news body NewsIn true "A payload of new news"
 // @Success      201  {object}  restapi.RespBody{data=posting.Response} "Response body for a new news"
 // @Failure      400  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
@@ -45,7 +38,7 @@ func (n Restapi) Route(r chi.Router) {
 func (n Restapi) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	payloadIn := InputNews{}
+	payloadIn := NewsIn{}
 
 	err := json.NewDecoder(r.Body).Decode(&payloadIn)
 	if err != nil {
@@ -56,7 +49,7 @@ func (n Restapi) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nws, err := n.Service.Create(ctx, payloadIn.Title, payloadIn.Body, payloadIn.Status, payloadIn.Tags)
+	nws, err := n.Service.Create(ctx, payloadIn)
 	if err != nil {
 		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
@@ -128,7 +121,7 @@ func (n Restapi) GetById(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        id   path      string  true  "News ID"  Format(uuid)
-// @Param news body InputNews true "A payload of new news"
+// @Param news body NewsIn true "A payload of new news"
 // @Success      200  {object}  restapi.RespBody{data=posting.Response} "Response body for a new news"
 // @Failure      400  {object}  restapi.ErrRespBody{error=object{message=string}}
 // @Failure      404  {object}  restapi.ErrRespBody{error=object{message=string}}
@@ -146,7 +139,7 @@ func (n Restapi) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadIn := InputNews{}
+	payloadIn := NewsIn{}
 
 	err = json.NewDecoder(r.Body).Decode(&payloadIn)
 	if err != nil {
@@ -157,14 +150,7 @@ func (n Restapi) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nws, err := n.Service.Update(ctx,
-		id,
-		payloadIn.Title,
-		payloadIn.Body,
-		payloadIn.Status,
-		payloadIn.Tags,
-	)
-
+	nws, err := n.Service.Update(ctx, id, payloadIn)
 	if err != nil {
 		err = restapi.WriteErrResponse(w, err)
 		if err != nil {
@@ -246,7 +232,7 @@ func (n Restapi) GetAll(w http.ResponseWriter, r *http.Request) {
 	topic := q.Get("topic")
 	status := q.Get("status")
 
-	newsRes := make([]Response, 0)
+	newsRes := make([]NewsOut, 0)
 
 	switch {
 	case topic != "" && status != "":
