@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrInternalServer = errors.New("internal server error")
+	ErrInternalServer   = errors.New("internal server error")
 	ErrDataAlreadyExist = validation.NewError(
 		"data_already_exist",
 		"the data already exist",

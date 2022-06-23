@@ -17,7 +17,7 @@ type Response struct {
 }
 
 type Service struct {
-	storage Repository
+	store Repository
 }
 
 func CreateSvc(repo Repository) Service {
@@ -32,7 +32,7 @@ func (s Service) Create(ctx context.Context, tagName string) (Response, error) {
 		return Response{}, err
 	}
 
-	err = s.storage.Save(ctx, *tag)
+	err = s.store.Save(ctx, *tag)
 	if err != nil {
 		if err.Error() == bareknews.ErrDataAlreadyExist.Error() {
 			return Response{}, bareknews.ErrDataAlreadyExist
@@ -48,7 +48,7 @@ func (s Service) Create(ctx context.Context, tagName string) (Response, error) {
 }
 
 func (s Service) Update(ctx context.Context, id uuid.UUID, newTagname string) (Response, error) {
-	tag, err := s.storage.GetById(ctx, id)
+	tag, err := s.store.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
@@ -64,7 +64,7 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, newTagname string) (R
 		return Response{}, err
 	}
 
-	err = s.storage.Update(ctx, *tag)
+	err = s.store.Update(ctx, *tag)
 	if err != nil {
 		return Response{}, err
 	}
@@ -77,7 +77,7 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, newTagname string) (R
 }
 
 func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
-	_, err := s.storage.Count(ctx, id)
+	_, err := s.store.Count(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return bareknews.ErrDataNotFound
@@ -86,7 +86,7 @@ func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
 		}
 	}
 
-	err = s.storage.Delete(ctx, id)
+	err = s.store.Delete(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s Service) GetById(ctx context.Context, id uuid.UUID) (Response, error) {
-	tg, err := s.storage.GetById(ctx, id)
+	tg, err := s.store.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Response{}, bareknews.ErrDataNotFound
@@ -112,7 +112,7 @@ func (s Service) GetById(ctx context.Context, id uuid.UUID) (Response, error) {
 }
 
 func (s Service) GetByIds(ctx context.Context, ids []uuid.UUID) ([]Response, error) {
-	tgs, err := s.storage.GetByIds(ctx, ids)
+	tgs, err := s.store.GetByIds(ctx, ids)
 	if err != nil {
 		return []Response{}, bareknews.ErrInternalServer
 	}
@@ -131,7 +131,7 @@ func (s Service) GetByIds(ctx context.Context, ids []uuid.UUID) ([]Response, err
 }
 
 func (s Service) GetAll(ctx context.Context) ([]Response, error) {
-	tg, err := s.storage.GetAll(ctx)
+	tg, err := s.store.GetAll(ctx)
 	if err != nil {
 		return []Response{}, err
 	}
@@ -149,8 +149,8 @@ func (s Service) GetAll(ctx context.Context) ([]Response, error) {
 	return r, nil
 }
 
-func (s Service) GetByNames(ctx context.Context, tagsIn []string) []Response {
-	tg, err := s.storage.GetByNames(ctx, tagsIn...)
+func (s Service) GetByNames(ctx context.Context, names []string) []Response {
+	tg, err := s.store.GetByNames(ctx, names...)
 	if err != nil {
 		return []Response{}
 	}
@@ -166,4 +166,17 @@ func (s Service) GetByNames(ctx context.Context, tagsIn []string) []Response {
 	}
 
 	return r
+}
+
+func (s Service) GetByName(ctx context.Context, name string) Response {
+	tg, err := s.store.GetByName(ctx, name)
+	if err != nil {
+		return Response{}
+	}
+
+	return Response{
+		ID:   tg.Label.ID,
+		Name: tg.Label.Name,
+		Slug: tg.Slug.String(),
+	}
 }

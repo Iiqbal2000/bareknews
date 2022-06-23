@@ -1,4 +1,4 @@
-package sqlite3
+package db
 
 import (
 	"context"
@@ -12,17 +12,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Tag struct {
-	Conn *sql.DB
+type Store struct {
+	conn *sql.DB
 }
 
-func (t Tag) Save(ctx context.Context, tag tags.Tags) error {
+func CreateStore(conn *sql.DB) Store {
+	return Store{conn: conn}
+}
+
+func (t Store) Save(ctx context.Context, tag tags.Tags) error {
 	query, args := sqlbuilder.InsertInto("tags").
 		Cols("id", "name", "slug").
 		Values(tag.Label.ID, tag.Label.Name, tag.Slug).
 		Build()
 
-	_, err := t.Conn.ExecContext(ctx, query, args...)
+	_, err := t.conn.ExecContext(ctx, query, args...)
 	if err != nil {
 		if possibleErr, ok := err.(sqlite3.Error); ok {
 			if possibleErr.ExtendedCode == sqlite3.ErrConstraintUnique {
@@ -36,7 +40,7 @@ func (t Tag) Save(ctx context.Context, tag tags.Tags) error {
 	return nil
 }
 
-func (t Tag) Update(ctx context.Context, tag tags.Tags) error {
+func (t Store) Update(ctx context.Context, tag tags.Tags) error {
 	builder := sqlbuilder.NewUpdateBuilder()
 	builder.Update("tags")
 	builder.Set(
@@ -45,7 +49,7 @@ func (t Tag) Update(ctx context.Context, tag tags.Tags) error {
 	)
 	builder.Where(builder.Equal("id", tag.Label.ID.String()))
 	query, args := builder.Build()
-	_, err := t.Conn.ExecContext(ctx, query, args...)
+	_, err := t.conn.ExecContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "storage.tags.update")
 	}
@@ -53,14 +57,14 @@ func (t Tag) Update(ctx context.Context, tag tags.Tags) error {
 	return nil
 }
 
-func (t Tag) Delete(ctx context.Context, id uuid.UUID) error {
+func (t Store) Delete(ctx context.Context, id uuid.UUID) error {
 	d := sqlbuilder.NewDeleteBuilder()
 	d.DeleteFrom("tags")
 	d.Where(d.Equal("id", id))
 
 	query, args := d.Build()
 
-	_, err := t.Conn.ExecContext(ctx, query, args...)
+	_, err := t.conn.ExecContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "storage.tags.delete")
 	}
@@ -68,13 +72,13 @@ func (t Tag) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (t Tag) GetById(ctx context.Context, id uuid.UUID) (*tags.Tags, error) {
+func (t Store) GetById(ctx context.Context, id uuid.UUID) (*tags.Tags, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select("id", "name", "slug")
 	builder.From("tags")
 	builder.Where(builder.Equal("id", id))
 	query, args := builder.Build()
-	row := t.Conn.QueryRowContext(ctx, query, args...)
+	row := t.conn.QueryRowContext(ctx, query, args...)
 
 	label := bareknews.Label{}
 	var slug bareknews.Slug
@@ -95,7 +99,7 @@ func (t Tag) GetById(ctx context.Context, id uuid.UUID) (*tags.Tags, error) {
 	return tag, nil
 }
 
-func (t Tag) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, error) {
+func (t Store) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	idstr := make([]string, 0)
 
@@ -110,7 +114,7 @@ func (t Tag) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, error)
 	builder.Where(builder.In("id", listMark))
 	query, args := builder.Build()
 
-	rows, err := t.Conn.QueryContext(ctx, query, args...)
+	rows, err := t.conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return []tags.Tags{}, errors.Wrap(err, "storage.tags.getByIds")
 	}
@@ -140,12 +144,12 @@ func (t Tag) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, error)
 	return results, nil
 }
 
-func (t Tag) GetAll(ctx context.Context) ([]tags.Tags, error) {
+func (t Store) GetAll(ctx context.Context) ([]tags.Tags, error) {
 	query, args := sqlbuilder.Select("id", "name", "slug").
 		From("tags").
 		Build()
 
-	rows, err := t.Conn.QueryContext(ctx, query, args...)
+	rows, err := t.conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return []tags.Tags{}, errors.Wrap(err, "storage.tags.getAll")
 	}
@@ -175,13 +179,13 @@ func (t Tag) GetAll(ctx context.Context) ([]tags.Tags, error) {
 	return results, nil
 }
 
-func (t Tag) Count(ctx context.Context, id uuid.UUID) (int, error) {
+func (t Store) Count(ctx context.Context, id uuid.UUID) (int, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select(builder.As("COUNT(id)", "c"))
 	builder.From("tags")
 	builder.Where(builder.Equal("id", id))
 	query, args := builder.Build()
-	row := t.Conn.QueryRowContext(ctx, query, args...)
+	row := t.conn.QueryRowContext(ctx, query, args...)
 
 	var c int
 	err := row.Scan(&c)
@@ -196,7 +200,7 @@ func (t Tag) Count(ctx context.Context, id uuid.UUID) (int, error) {
 	return c, nil
 }
 
-func (t Tag) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, error) {
+func (t Store) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 	listMark := sqlbuilder.List(names)
 	builder.Select("id", "name", "slug")
@@ -204,7 +208,7 @@ func (t Tag) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, erro
 	builder.Where(builder.In("name", listMark))
 	query, args := builder.Build()
 
-	rows, err := t.Conn.QueryContext(ctx, query, args...)
+	rows, err := t.conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return []tags.Tags{}, errors.Wrap(err, "storage.tags.getByNames")
 	}
@@ -228,5 +232,34 @@ func (t Tag) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, erro
 	}
 
 	return results, nil
+}
+
+func (t Store) GetByName(ctx context.Context, name string) (tags.Tags, error) {
+	queryBuilder := sqlbuilder.NewSelectBuilder()
+	queryBuilder.Select("id", "name", "slug")
+	queryBuilder.From("tags")
+	queryBuilder.Where(queryBuilder.Equal("name", name))
+	
+	query, args := queryBuilder.Build()
+	row := t.conn.QueryRowContext(ctx, query, args...)
+
+	label := bareknews.Label{}
+	var slug bareknews.Slug
+	
+	err := row.Scan(&label.ID, &label.Name, &slug)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return tags.Tags{}, sql.ErrNoRows
+		} else {
+			return tags.Tags{}, errors.Wrap(err, "storage.tags.GetByName")
+		}
+	}
+
+	tag := tags.Tags{
+		Label: label,
+		Slug:  slug,
+	}
+
+	return tag, nil
 }
 

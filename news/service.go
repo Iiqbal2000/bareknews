@@ -3,12 +3,12 @@ package news
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"strings"
 
 	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/tags"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 type NewsIn struct {
@@ -39,7 +39,7 @@ func createNewsOut(n *News, tgs []tags.Response) NewsOut {
 }
 
 type Service struct {
-	storage    Repository
+	store    Repository
 	taggingSvc tags.Service
 }
 
@@ -61,21 +61,21 @@ func (s Service) Create(ctx context.Context, input NewsIn) (NewsOut, error) {
 		return NewsOut{}, err
 	}
 
-	err = s.storage.Save(ctx, *news)
+	err = s.store.Save(ctx, *news)
 	if err != nil {
-		return NewsOut{}, err
+		return NewsOut{}, errors.Wrap(err, "save a news")
 	}
 
 	return createNewsOut(news, tg), nil
 }
 
 func (s Service) Update(ctx context.Context, id uuid.UUID, input NewsIn) (NewsOut, error) {
-	news, err := s.storage.GetById(ctx, id)
+	news, err := s.store.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewsOut{}, bareknews.ErrDataNotFound
 		} else {
-			return NewsOut{}, err
+			return NewsOut{}, errors.Wrap(err, "get a news item by id")
 		}
 	}
 
@@ -107,59 +107,59 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, input NewsIn) (NewsOu
 		return NewsOut{}, err
 	}
 
-	err = s.storage.Update(ctx, *news)
+	err = s.store.Update(ctx, *news)
 	if err != nil {
-		return NewsOut{}, err
+		return NewsOut{}, errors.Wrap(err, "update a news item")
 	}
 
 	tg, err := s.taggingSvc.GetByIds(ctx, news.TagsID)
 	if err != nil {
-		return NewsOut{}, err
+		return NewsOut{}, errors.Wrap(err, "get tags by ids")
 	}
 
 	return createNewsOut(news, tg), nil
 }
 
 func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
-	_, err := s.storage.Count(ctx, id)
+	_, err := s.store.Count(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return bareknews.ErrDataNotFound
 		} else {
-			return err
+			return errors.Wrap(err, "count news items")
 		}
 	}
 
-	err = s.storage.Delete(ctx, id)
+	err = s.store.Delete(ctx, id)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "delete a news item")
 	}
 
 	return nil
 }
 
 func (s Service) GetById(ctx context.Context, id uuid.UUID) (NewsOut, error) {
-	news, err := s.storage.GetById(ctx, id)
+	news, err := s.store.GetById(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewsOut{}, bareknews.ErrDataNotFound
 		} else {
-			return NewsOut{}, err
+			return NewsOut{}, errors.Wrap(err, "get a news item by id")
 		}
 	}
 
 	tgs, err := s.taggingSvc.GetByIds(ctx, news.TagsID)
 	if err != nil {
-		return NewsOut{}, err
+		return NewsOut{}, errors.Wrap(err, "get tags by ids")
 	}
 
 	return createNewsOut(news, tgs), nil
 }
 
 func (s Service) GetAll(ctx context.Context) ([]NewsOut, error) {
-	nws, err := s.storage.GetAll(ctx)
+	nws, err := s.store.GetAll(ctx)
 	if err != nil {
-		return []NewsOut{}, err
+		return []NewsOut{}, errors.Wrap(err, "get all news items")
 	}
 
 	r := make([]NewsOut, 0)
@@ -167,7 +167,7 @@ func (s Service) GetAll(ctx context.Context) ([]NewsOut, error) {
 	for _, nw := range nws {
 		tgs, err := s.taggingSvc.GetByIds(ctx, nw.TagsID)
 		if err != nil {
-			return []NewsOut{}, err
+			return []NewsOut{}, errors.Wrap(err, "get tags by ids")
 		}
 
 		r = append(r, createNewsOut(&nw, tgs))
@@ -177,11 +177,37 @@ func (s Service) GetAll(ctx context.Context) ([]NewsOut, error) {
 }
 
 func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]NewsOut, error) {
-	tg := s.taggingSvc.GetByNames(ctx, []string{topic})
+	tg := s.taggingSvc.GetByName(ctx, topic)
 
-	nws, err := s.storage.GetAllByTopic(ctx, tg[0].ID)
+	newsItems, err := s.store.GetAllByTopic(ctx, tg.ID)
+	if err != nil {
+		return []NewsOut{}, errors.Wrap(err, "get all news items by topic")
+	}
+
+	r := make([]NewsOut, 0)
+
+	for _, item := range newsItems {
+		tgs, err := s.taggingSvc.GetByIds(ctx, item.TagsID)
+		if err != nil {
+			return []NewsOut{}, errors.Wrap(err, "get tags by ids")
+		}
+
+		r = append(r, createNewsOut(&item, tgs))
+	}
+
+	return r, nil
+}
+
+func (s Service) GetAllByStatus(ctx context.Context, statusIn string) ([]NewsOut, error) {
+	status := bareknews.Status(statusIn)
+	err := status.Validate()
 	if err != nil {
 		return []NewsOut{}, err
+	}
+
+	nws, err := s.store.GetAllByStatus(ctx, status)
+	if err != nil {
+		return []NewsOut{}, errors.Wrap(err, "get all news items by status")
 	}
 
 	r := make([]NewsOut, 0)
@@ -189,7 +215,7 @@ func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]NewsOut, er
 	for _, nw := range nws {
 		tgs, err := s.taggingSvc.GetByIds(ctx, nw.TagsID)
 		if err != nil {
-			return []NewsOut{}, err
+			return []NewsOut{}, errors.Wrap(err, "get tags by ids")
 		}
 
 		r = append(r, createNewsOut(&nw, tgs))
@@ -198,28 +224,12 @@ func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]NewsOut, er
 	return r, nil
 }
 
-func (s Service) GetAllByStatus(ctx context.Context, status string) ([]NewsOut, error) {
-	stat := bareknews.Status(status)
-	err := stat.Validate()
-	if err != nil {
-		return []NewsOut{}, err
-	}
+// func (s Service) GetAllByTopicStatus(ctx context.Context, topicIn, statusIn string) ([]NewsOut, error) {
+// 	status := bareknews.Status(statusIn)
+// 	err := status.Validate()
+// 	if err != nil {
+// 		return []NewsOut{}, err
+// 	}
 
-	nws, err := s.storage.GetAllByStatus(ctx, stat)
-	if err != nil {
-		return []NewsOut{}, err
-	}
 
-	r := make([]NewsOut, 0)
-
-	for _, nw := range nws {
-		tgs, err := s.taggingSvc.GetByIds(ctx, nw.TagsID)
-		if err != nil {
-			return []NewsOut{}, err
-		}
-
-		r = append(r, createNewsOut(&nw, tgs))
-	}
-
-	return r, nil
-}
+// }

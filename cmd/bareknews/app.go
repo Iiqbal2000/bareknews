@@ -1,32 +1,36 @@
 package main
 
 import (
-	"log"
+	"net/http"
 
 	"github.com/Iiqbal2000/bareknews/news"
-	"github.com/Iiqbal2000/bareknews/pkg/sqlite3"
+	newsdb "github.com/Iiqbal2000/bareknews/news/db"
+	"github.com/Iiqbal2000/bareknews/pkg/web"
 	"github.com/Iiqbal2000/bareknews/tags"
+	tagsdb "github.com/Iiqbal2000/bareknews/tags/db"
+	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-const dbfile = "./bareknews.db"
+func APIMux(cfg web.APIMuxConfig) http.Handler {
+	mux := chi.NewRouter()
 
-type App struct {
-	TaggingSvc tags.Service
-	PostingSvc news.Service
-}
+	mux.Use(web.ContentTypeJSON)
 
-func RunApp() App {
-	dbConn := sqlite3.Run(dbfile, true)
-	newsDB := sqlite3.News{Conn: dbConn}
-	tagDB := sqlite3.Tag{Conn: dbConn}
+	mux.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:3333/swagger/doc.json"),
+	))
 
-	taggingSvc := tags.CreateSvc(tagDB)
-	postingSvc := news.CreateSvc(newsDB, taggingSvc)
+	newsDB := newsdb.CreateStore(cfg.DB)
+	tagDB := tagsdb.CreateStore(cfg.DB)
 
-	log.Println("Starting APP")
+	tr := tags.Route(cfg, tagDB)
+	nr := news.Route(cfg, newsDB, tr.Svc)
 
-	return App{
-		TaggingSvc: taggingSvc,
-		PostingSvc: postingSvc,
-	}
+	mux.Route("/api", func(r chi.Router) {
+		r.Route("/tags", tr.Router)
+		r.Route("/news", nr)
+	})
+
+	return mux
 }

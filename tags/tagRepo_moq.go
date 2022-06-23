@@ -34,6 +34,9 @@ var _ Repository = &RepositoryMock{}
 // 			GetByIdsFunc: func(contextMoqParam context.Context, uUIDs []uuid.UUID) ([]Tags, error) {
 // 				panic("mock out the GetByIds method")
 // 			},
+// 			GetByNameFunc: func(ctx context.Context, name string) (Tags, error) {
+// 				panic("mock out the GetByName method")
+// 			},
 // 			GetByNamesFunc: func(contextMoqParam context.Context, strings ...string) ([]Tags, error) {
 // 				panic("mock out the GetByNames method")
 // 			},
@@ -64,6 +67,9 @@ type RepositoryMock struct {
 
 	// GetByIdsFunc mocks the GetByIds method.
 	GetByIdsFunc func(contextMoqParam context.Context, uUIDs []uuid.UUID) ([]Tags, error)
+
+	// GetByNameFunc mocks the GetByName method.
+	GetByNameFunc func(ctx context.Context, name string) (Tags, error)
 
 	// GetByNamesFunc mocks the GetByNames method.
 	GetByNamesFunc func(contextMoqParam context.Context, strings ...string) ([]Tags, error)
@@ -109,6 +115,13 @@ type RepositoryMock struct {
 			// UUIDs is the uUIDs argument value.
 			UUIDs []uuid.UUID
 		}
+		// GetByName holds details about calls to the GetByName method.
+		GetByName []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Name is the name argument value.
+			Name string
+		}
 		// GetByNames holds details about calls to the GetByNames method.
 		GetByNames []struct {
 			// ContextMoqParam is the contextMoqParam argument value.
@@ -136,6 +149,7 @@ type RepositoryMock struct {
 	lockGetAll     sync.RWMutex
 	lockGetById    sync.RWMutex
 	lockGetByIds   sync.RWMutex
+	lockGetByName  sync.RWMutex
 	lockGetByNames sync.RWMutex
 	lockSave       sync.RWMutex
 	lockUpdate     sync.RWMutex
@@ -309,6 +323,41 @@ func (mock *RepositoryMock) GetByIdsCalls() []struct {
 	mock.lockGetByIds.RLock()
 	calls = mock.calls.GetByIds
 	mock.lockGetByIds.RUnlock()
+	return calls
+}
+
+// GetByName calls GetByNameFunc.
+func (mock *RepositoryMock) GetByName(ctx context.Context, name string) (Tags, error) {
+	if mock.GetByNameFunc == nil {
+		panic("RepositoryMock.GetByNameFunc: method is nil but Repository.GetByName was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Name string
+	}{
+		Ctx:  ctx,
+		Name: name,
+	}
+	mock.lockGetByName.Lock()
+	mock.calls.GetByName = append(mock.calls.GetByName, callInfo)
+	mock.lockGetByName.Unlock()
+	return mock.GetByNameFunc(ctx, name)
+}
+
+// GetByNameCalls gets all the calls that were made to GetByName.
+// Check the length with:
+//     len(mockedRepository.GetByNameCalls())
+func (mock *RepositoryMock) GetByNameCalls() []struct {
+	Ctx  context.Context
+	Name string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Name string
+	}
+	mock.lockGetByName.RLock()
+	calls = mock.calls.GetByName
+	mock.lockGetByName.RUnlock()
 	return calls
 }
 

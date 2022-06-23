@@ -15,5 +15,6 @@ type Repository interface {
 	GetAll(context.Context) ([]Tags, error)
 	Count(context.Context, uuid.UUID) (int, error)
 	GetByNames(context.Context, ...string) ([]Tags, error)
+	GetByName(ctx context.Context, name string) (Tags, error)
 	GetByIds(context.Context, []uuid.UUID) ([]Tags, error)
 }

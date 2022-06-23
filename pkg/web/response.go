@@ -1,13 +1,13 @@
-package restapi
+package web
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/Iiqbal2000/bareknews"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 // RespBody represents the common response body for JSON type.
@@ -21,16 +21,17 @@ type ErrRespBody struct {
 	Err map[string]interface{} `json:"error" swaggertype:"object"`
 }
 
-func WriteErrResponse(w http.ResponseWriter, err error) error {
+func WriteErrResponse(w http.ResponseWriter, log *zap.SugaredLogger, err error) error {
 	switch errors.Cause(err).(type) {
 	case validation.Errors, validation.Error:
-		if err.Error() == bareknews.ErrDataNotFound.Error() {
+		if errors.Is(err, bareknews.ErrDataNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
+			err = errors.Cause(err)
 		}
 	default:
-		log.Println(err.Error())
+		log.Error(err.Error())
 		err = bareknews.ErrInternalServer
 		w.WriteHeader(http.StatusInternalServerError)
 	}

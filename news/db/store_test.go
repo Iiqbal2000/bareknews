@@ -1,19 +1,22 @@
-package sqlite3_test
+package db_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/Iiqbal2000/bareknews"
-	"github.com/Iiqbal2000/bareknews/pkg/sqlite3"
 	"github.com/Iiqbal2000/bareknews/news"
+	"github.com/Iiqbal2000/bareknews/news/db"
+	"github.com/Iiqbal2000/bareknews/pkg/sqlite3"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 )
 
 func TestSaveNews(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	newsStore := sqlite3.News{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	newsStore := db.CreateStore(conn)
 	is := is.New(t)
 
 	tgIds := []uuid.UUID{uuid.New(), uuid.New(), uuid.New()}
@@ -36,8 +39,10 @@ func TestSaveNews(t *testing.T) {
 }
 
 func TestUpdateNews(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	newsStore := sqlite3.News{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	newsStore := db.CreateStore(conn)
 	is := is.New(t)
 	tgIds := []uuid.UUID{uuid.New(), uuid.New(), uuid.New()}
 
@@ -68,8 +73,10 @@ func TestUpdateNews(t *testing.T) {
 }
 
 func TestDeleteNews(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	newsStore := sqlite3.News{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	newsStore := db.CreateStore(conn)
 	is := is.New(t)
 
 	tgId := uuid.New()
@@ -89,8 +96,10 @@ func TestDeleteNews(t *testing.T) {
 }
 
 func TestGetByID(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	newsStore := sqlite3.News{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	newsStore := db.CreateStore(conn)
 	is := is.New(t)
 
 	tgId := uuid.New()
@@ -114,8 +123,10 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestGetAllNews(t *testing.T) {
-	conn := sqlite3.Run("./../../bareknews.db", true)
-	newsStore := sqlite3.News{Conn: conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: "./../../bareknews.db",
+	}, true)
+	newsStore := db.CreateStore(conn)
 
 	tgId := uuid.New()
 
@@ -156,8 +167,10 @@ func TestGetAllNews(t *testing.T) {
 }
 
 func TestGetAllByTopic(t *testing.T) {
-	conn := sqlite3.Run("./../../bareknews.db", true)
-	newsStore := sqlite3.News{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: "./../../bareknews.db",
+	}, true)
+	newsStore := db.CreateStore(conn)
 
 	tgId := uuid.New()
 
@@ -186,8 +199,10 @@ func TestGetAllByTopic(t *testing.T) {
 }
 
 func TestGetAllByStatus(t *testing.T) {
-	conn := sqlite3.Run("./../../bareknews.db", true)
-	newsStore := sqlite3.News{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: "./../../bareknews.db",
+	}, true)
+	newsStore := db.CreateStore(conn)
 
 	tgId := uuid.New()
 

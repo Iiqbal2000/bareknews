@@ -1,19 +1,22 @@
-package sqlite3_test
+package db_test
 
 import (
 	"context"
 	"database/sql"
 	"testing"
 
-	"github.com/Iiqbal2000/bareknews/tags"
 	"github.com/Iiqbal2000/bareknews/pkg/sqlite3"
+	"github.com/Iiqbal2000/bareknews/tags"
+	"github.com/Iiqbal2000/bareknews/tags/db"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 )
 
 func TestSave(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	storage := sqlite3.Tag{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	storage := db.CreateStore(conn)
 	is := is.New(t)
 
 	tag := tags.Create("tag 1")
@@ -28,8 +31,10 @@ func TestSave(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	storage := sqlite3.Tag{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag1 := tags.Create("tag 1")
 	tag2 := tags.Create("tag 2")
@@ -50,8 +55,10 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	storage := sqlite3.Tag{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag := tags.Create("tag 1")
 	err := storage.Save(context.TODO(), *tag)
@@ -65,8 +72,10 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	storage := sqlite3.Tag{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	storage := db.CreateStore(conn)
 	is := is.New(t)
 
 	tag := tags.Create("tag 1")
@@ -80,23 +89,27 @@ func TestDelete(t *testing.T) {
 
 func TestCount(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		conn := sqlite3.Run(":memory:", true)
-		storage := sqlite3.Tag{conn}
+		conn, _ := sqlite3.Run(sqlite3.Config{
+			URI: ":memory:",
+		}, true)
+		storage := db.CreateStore(conn)
 		is := is.New(t)
 		tag := tags.Create("tag 1")
 		err := storage.Save(context.TODO(), *tag)
 		is.NoErr(err)
-	
+
 		c, err := storage.Count(context.TODO(), tag.Label.ID)
 		is.NoErr(err)
 		is.True(c != 0)
 	})
 
 	t.Run("error", func(t *testing.T) {
-		conn := sqlite3.Run(":memory:", true)
-		storage := sqlite3.Tag{conn}
+		conn, _ := sqlite3.Run(sqlite3.Config{
+			URI: ":memory:",
+		}, true)
+		storage := db.CreateStore(conn)
 		is := is.New(t)
-	
+
 		c, err := storage.Count(context.TODO(), uuid.New())
 		is.Equal(err, sql.ErrNoRows)
 		is.Equal(c, 0)
@@ -104,8 +117,10 @@ func TestCount(t *testing.T) {
 }
 
 func TestGetByNames(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	storage := sqlite3.Tag{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag1 := tags.Create("tag 1")
 	tag2 := tags.Create("tag 2")
@@ -126,8 +141,10 @@ func TestGetByNames(t *testing.T) {
 }
 
 func TestGetById(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	storage := sqlite3.Tag{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag1 := tags.Create("tag 1")
 	err := storage.Save(context.TODO(), *tag1)
@@ -139,8 +156,10 @@ func TestGetById(t *testing.T) {
 }
 
 func TestGetByIds(t *testing.T) {
-	conn := sqlite3.Run(":memory:", true)
-	storage := sqlite3.Tag{conn}
+	conn, _ := sqlite3.Run(sqlite3.Config{
+		URI: ":memory:",
+	}, true)
+	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag1 := tags.Create("tag 1")
 	tag2 := tags.Create("tag 2")
