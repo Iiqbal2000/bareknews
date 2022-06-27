@@ -34,9 +34,6 @@ func (s Service) Create(ctx context.Context, tagName string) (TagsOut, error) {
 
 	err = s.store.Save(ctx, *tag)
 	if err != nil {
-		if err.Error() == bareknews.ErrDataAlreadyExist.Error() {
-			return TagsOut{}, bareknews.ErrDataAlreadyExist
-		}
 		return TagsOut{}, err
 	}
 
