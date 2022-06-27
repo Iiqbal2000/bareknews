@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Tags is an aggregrate that represent a tag
+// Tags is a type that represent a tag.
 type Tags struct {
 	Label bareknews.Label
 	Slug  bareknews.Slug

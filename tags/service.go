@@ -10,6 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
+type TagsIn struct {
+	Name string `json:"name" validate:"required"`
+}
+
 type TagsOut struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`

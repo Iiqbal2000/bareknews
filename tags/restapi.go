@@ -17,10 +17,6 @@ type handler struct {
 	log     *zap.SugaredLogger
 }
 
-type InputTag struct {
-	Name string `json:"name" validate:"required"`
-}
-
 func CreateHandler(svc Service, log *zap.SugaredLogger) handler {
 	return handler{service: svc, log: log}
 }
@@ -40,7 +36,7 @@ func CreateHandler(svc Service, log *zap.SugaredLogger) handler {
 func (t handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	payload := InputTag{}
+	payload := TagsIn{}
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -142,7 +138,7 @@ func (t handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload := InputTag{}
+	payload := TagsIn{}
 
 	err = json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
