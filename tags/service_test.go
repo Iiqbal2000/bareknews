@@ -65,6 +65,22 @@ func TestCreate(t *testing.T) {
 		is.Equal(len(store.SaveCalls()), 0)
 	})
 
+	t.Run("invalid payload: tag name already exists", func(t *testing.T) {
+		store := &tags.RepositoryMock{
+			SaveFunc: func(ctx context.Context, tags tags.Tags) error {
+				return bareknews.ErrDataAlreadyExist
+			},
+			GetByIdFunc: func(ctx context.Context, id uuid.UUID) (*tags.Tags, error) {
+				return &tags.Tags{}, nil
+			},
+		}
+
+		svc := tags.CreateSvc(store)
+		_, err := svc.Create(context.TODO(), "Lorem Ipsum")
+		is := is.New(t)
+		is.True(err != nil)
+		is.Equal(err, bareknews.ErrDataAlreadyExist)
+	})
 }
 
 func TestUpdate(t *testing.T) {
