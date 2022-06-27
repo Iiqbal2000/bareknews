@@ -19,15 +19,15 @@ type NewsIn struct {
 }
 
 type NewsOut struct {
-	ID     uuid.UUID       `json:"id"`
-	Title  string          `json:"title"`
-	Body   string          `json:"body"`
-	Status string          `json:"status"`
-	Slug   string          `json:"slug"`
-	Tags   []tags.Response `json:"tags"`
+	ID     uuid.UUID      `json:"id"`
+	Title  string         `json:"title"`
+	Body   string         `json:"body"`
+	Status string         `json:"status"`
+	Slug   string         `json:"slug"`
+	Tags   []tags.TagsOut `json:"tags"`
 }
 
-func createNewsOut(n *News, tgs []tags.Response) NewsOut {
+func createNewsOut(n *News, tgs []tags.TagsOut) NewsOut {
 	return NewsOut{
 		ID:     n.Post.ID,
 		Title:  n.Post.Title,
@@ -39,7 +39,7 @@ func createNewsOut(n *News, tgs []tags.Response) NewsOut {
 }
 
 type Service struct {
-	store    Repository
+	store      Repository
 	taggingSvc tags.Service
 }
 
@@ -230,6 +230,5 @@ func (s Service) GetAllByStatus(ctx context.Context, statusIn string) ([]NewsOut
 // 	if err != nil {
 // 		return []NewsOut{}, err
 // 	}
-
 
 // }
