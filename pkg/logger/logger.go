@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// New performs creating a SugaredLogger object.
 func New(service string) (*zap.SugaredLogger, error) {
 	config := zap.NewProductionConfig()
 	config.OutputPaths = []string{"stdout"}

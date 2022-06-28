@@ -48,6 +48,8 @@ func main() {
 	}
 }
 
+// run runs the sequence of the components
+// that are needed for the web app works.
 func run(log *zap.SugaredLogger) error {
 	cfg := struct {
 		Web struct {
@@ -59,10 +61,9 @@ func run(log *zap.SugaredLogger) error {
 			DebugHost       string        `conf:"default:0.0.0.0:4000"`
 		}
 		DB string `conf:"default:./bareknews.db"`
-	}{
-		// DB: dbfile,
-	}
+	}{}
 
+	// prefix contains a namespace for env variables.
 	const prefix = "NEWS"
 	_, err := conf.Parse(prefix, &cfg)
 	if err != nil {
@@ -82,8 +83,12 @@ func run(log *zap.SugaredLogger) error {
 	if err != nil {
 		return errors.Wrap(err, "generating config for output")
 	}
+
 	log.Infow("startup", "config", out)
 
+	// Run sqlite.
+	// Second param is boolean that represents 
+	// whether the existing table needs to drop.
 	dbConn, err := sqlite3.Run(sqlite3.Config{
 		URI: cfg.DB,
 		Log: log,

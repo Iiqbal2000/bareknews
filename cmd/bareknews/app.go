@@ -12,18 +12,24 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// APIMux sets mux, middlewares, swagger doc, databases
+// routes.
 func APIMux(cfg web.APIMuxConfig) http.Handler {
 	mux := chi.NewRouter()
 
+	// Middleware
 	mux.Use(web.ContentTypeJSON)
 
+	// Swagger Doc
 	mux.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("http://localhost:3333/swagger/doc.json"),
 	))
 
+	// Load databases
 	newsDB := newsdb.CreateStore(cfg.DB)
 	tagDB := tagsdb.CreateStore(cfg.DB)
 
+	// Load Routes
 	tr := tags.Route(cfg, tagDB)
 	nr := news.Route(cfg, newsDB, tr.Svc)
 
