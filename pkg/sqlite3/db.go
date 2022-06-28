@@ -16,9 +16,10 @@ var embedMigrations embed.FS
 type Config struct {
 	URI string
 	Log *zap.SugaredLogger
+	DropTableFirst bool
 }
 
-func Run(c Config, dropTable bool) (*sql.DB, error) {
+func Run(c Config) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", c.URI)
 	if err != nil {
 		return nil, errors.Wrap(err, "failure when opening db connection")
@@ -27,7 +28,7 @@ func Run(c Config, dropTable bool) (*sql.DB, error) {
 	goose.SetDialect("sqlite3")
 	goose.SetBaseFS(embedMigrations)
 
-	if dropTable {
+	if c.DropTableFirst {
 		if err := goose.Reset(db, "schema"); err != nil {
 			return nil, errors.Wrap(err, "could not perform resetting the migration")
 		}
@@ -41,7 +42,9 @@ func Run(c Config, dropTable bool) (*sql.DB, error) {
 		return nil, errors.Wrap(err, "could not prints the current version of the db migration")
 	}
 
-	c.Log.Infow("startup", "status", "successfully migrate the db schema")
+	if c.Log != nil {
+		c.Log.Infow("startup", "status", "successfully migrate the db schema")
+	}
 
 	return db, nil
 }

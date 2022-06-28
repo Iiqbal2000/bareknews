@@ -13,9 +13,7 @@ import (
 )
 
 func TestSave(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	storage := db.CreateStore(conn)
 	is := is.New(t)
 
@@ -31,9 +29,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag1 := tags.Create("tag 1")
@@ -55,9 +51,7 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag := tags.Create("tag 1")
@@ -72,9 +66,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	storage := db.CreateStore(conn)
 	is := is.New(t)
 
@@ -89,9 +81,7 @@ func TestDelete(t *testing.T) {
 
 func TestCount(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		conn, _ := sqlite3.Run(sqlite3.Config{
-			URI: ":memory:",
-		}, true)
+		conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 		storage := db.CreateStore(conn)
 		is := is.New(t)
 		tag := tags.Create("tag 1")
@@ -104,9 +94,7 @@ func TestCount(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		conn, _ := sqlite3.Run(sqlite3.Config{
-			URI: ":memory:",
-		}, true)
+		conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 		storage := db.CreateStore(conn)
 		is := is.New(t)
 
@@ -117,9 +105,7 @@ func TestCount(t *testing.T) {
 }
 
 func TestGetByNames(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag1 := tags.Create("tag 1")
@@ -141,9 +127,7 @@ func TestGetByNames(t *testing.T) {
 }
 
 func TestGetById(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag1 := tags.Create("tag 1")
@@ -156,9 +140,7 @@ func TestGetById(t *testing.T) {
 }
 
 func TestGetByIds(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	storage := db.CreateStore(conn)
 	is := is.New(t)
 	tag1 := tags.Create("tag 1")

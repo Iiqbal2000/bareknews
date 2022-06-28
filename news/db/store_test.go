@@ -13,9 +13,7 @@ import (
 )
 
 func TestSaveNews(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	newsStore := db.CreateStore(conn)
 	is := is.New(t)
 
@@ -39,9 +37,7 @@ func TestSaveNews(t *testing.T) {
 }
 
 func TestUpdateNews(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	newsStore := db.CreateStore(conn)
 	is := is.New(t)
 	tgIds := []uuid.UUID{uuid.New(), uuid.New(), uuid.New()}
@@ -73,9 +69,7 @@ func TestUpdateNews(t *testing.T) {
 }
 
 func TestDeleteNews(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	newsStore := db.CreateStore(conn)
 	is := is.New(t)
 
@@ -96,9 +90,7 @@ func TestDeleteNews(t *testing.T) {
 }
 
 func TestGetByID(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: ":memory:",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: ":memory:", DropTableFirst: true})
 	newsStore := db.CreateStore(conn)
 	is := is.New(t)
 
@@ -123,9 +115,7 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestGetAllNews(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: "./../../bareknews.db",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: "./../../bareknews.db", DropTableFirst: true})
 	newsStore := db.CreateStore(conn)
 
 	tgId := uuid.New()
@@ -167,9 +157,7 @@ func TestGetAllNews(t *testing.T) {
 }
 
 func TestGetAllByTopic(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: "./../../bareknews.db",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: "./../../bareknews.db", DropTableFirst: true})
 	newsStore := db.CreateStore(conn)
 
 	tgId := uuid.New()
@@ -199,9 +187,7 @@ func TestGetAllByTopic(t *testing.T) {
 }
 
 func TestGetAllByStatus(t *testing.T) {
-	conn, _ := sqlite3.Run(sqlite3.Config{
-		URI: "./../../bareknews.db",
-	}, true)
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: "./../../bareknews.db", DropTableFirst: true})
 	newsStore := db.CreateStore(conn)
 
 	tgId := uuid.New()

@@ -87,12 +87,11 @@ func run(log *zap.SugaredLogger) error {
 	log.Infow("startup", "config", out)
 
 	// Run sqlite.
-	// Second param is boolean that represents 
-	// whether the existing table needs to drop.
 	dbConn, err := sqlite3.Run(sqlite3.Config{
 		URI: cfg.DB,
 		Log: log,
-	}, true)
+		DropTableFirst: true,
+	})
 	if err != nil {
 		return errors.Wrap(err, "failed to connect db")
 	}
