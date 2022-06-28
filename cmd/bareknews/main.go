@@ -86,6 +86,7 @@ func run(log *zap.SugaredLogger) error {
 
 	dbConn, err := sqlite3.Run(sqlite3.Config{
 		URI: cfg.DB,
+		Log: log,
 	}, true)
 	if err != nil {
 		return errors.Wrap(err, "failed to connect db")
