@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/news"
@@ -135,7 +136,7 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	tgId := uuid.New()
-	payload := news.Create("news title", "news body", "draft", []uuid.UUID{tgId})
+	payload := news.Create("news title", "news body", "draft", []uuid.UUID{tgId}, time.Now().Unix())
 
 	store := &news.RepositoryMock{
 		GetByIdFunc: func(ctx context.Context, id uuid.UUID) (*news.News, error) {
@@ -188,7 +189,7 @@ func TestDelete(t *testing.T) {
 		is := is.New(t)
 
 		svc := news.CreateSvc(store, tags.CreateSvc(&tags.RepositoryMock{}))
-		payload := news.Create("news title", "news body", "draft", []uuid.UUID{uuid.New()})
+		payload := news.Create("news title", "news body", "draft", []uuid.UUID{uuid.New()}, time.Now().Unix())
 		err := svc.Delete(context.TODO(), payload.Post.ID)
 		is.NoErr(err)
 

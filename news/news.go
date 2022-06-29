@@ -11,9 +11,11 @@ type News struct {
 	Status bareknews.Status
 	Slug   bareknews.Slug
 	TagsID []uuid.UUID
+	DateCreated int64
+	DateUpdated int64
 }
 
-func Create(title, body string, status bareknews.Status, tags []uuid.UUID) *News {
+func Create(title, body string, status bareknews.Status, tags []uuid.UUID, timeNowUnix int64) *News {
 	post := bareknews.Post{
 		ID:    uuid.New(),
 		Title: title,
@@ -25,6 +27,8 @@ func Create(title, body string, status bareknews.Status, tags []uuid.UUID) *News
 		Status: status,
 		Slug:   bareknews.NewSlug(post.Title),
 		TagsID: tags,
+		DateCreated: timeNowUnix,
+		DateUpdated: timeNowUnix,
 	}
 }
 
@@ -59,4 +63,8 @@ func (n *News) ChangeBody(newBody string) {
 
 func (n *News) ChangeTags(newTags []uuid.UUID) {
 	n.TagsID = newTags
+}
+
+func (n *News) ChangeDateUpdated(timeNowUnix int64) {
+	n.DateUpdated = timeNowUnix
 }

@@ -30,13 +30,22 @@ func (s Store) Save(ctx context.Context, n news.News) error {
 
 	builder := sqlbuilder.NewInsertBuilder()
 	builder.InsertInto("news")
-	builder.Cols("id", "title", "slug", "status", "body")
+	builder.Cols(
+		"id",
+		"title",
+		"slug",
+		"status",
+		"body","date_created",
+		"date_updated",
+	)
 	builder.Values(
 		n.Post.ID,
 		n.Post.Title,
 		n.Slug,
 		n.Status,
 		n.Post.Body,
+		n.DateCreated,
+		n.DateUpdated,
 	)
 	query, args := builder.Build()
 
@@ -64,7 +73,7 @@ func (s Store) Save(ctx context.Context, n news.News) error {
 
 func (s Store) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
 	builder := sqlbuilder.NewSelectBuilder()
-	builder.Select("id", "title", "status", "body", "slug")
+	builder.Select("id", "title", "status", "body", "slug", "date_created", "date_updated")
 	builder.From("news")
 	builder.Where(builder.Equal("id", id))
 
@@ -73,8 +82,10 @@ func (s Store) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
 	post := bareknews.Post{}
 	slug := new(bareknews.Slug)
 	status := new(bareknews.Status)
+	dateCreated := new(int64)
+	updateCreated := new(int64)
 
-	err := row.Scan(&post.ID, &post.Title, status, &post.Body, slug)
+	err := row.Scan(&post.ID, &post.Title, status, &post.Body, slug, dateCreated, updateCreated)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &news.News{}, sql.ErrNoRows
@@ -93,6 +104,8 @@ func (s Store) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
 		Slug:   *slug,
 		Status: *status,
 		TagsID: tagIdResults,
+		DateCreated: *dateCreated,
+		DateUpdated: *updateCreated,
 	}
 	return result, nil
 }
@@ -112,6 +125,7 @@ func (s Store) Update(ctx context.Context, n news.News) error {
 		builder.Assign("body", n.Post.Body),
 		builder.Assign("status", n.Status),
 		builder.Assign("slug", n.Slug),
+		builder.Assign("date_updated", n.DateUpdated),
 	)
 	builder.Where(builder.Equal("id", n.Post.ID))
 
@@ -196,7 +210,15 @@ func (s Store) Count(ctx context.Context, id uuid.UUID) (int, error) {
 func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 
-	builder.Select("id", "title", "status", "body", "slug")
+	builder.Select(
+		"id",
+		"title",
+		"status",
+		"body",
+		"slug",
+		"date_created",
+		"date_updated",
+	)
 	builder.From("news")
 	query, args := builder.Build()
 
@@ -214,8 +236,18 @@ func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
 		post := bareknews.Post{}
 		slug := new(bareknews.Slug)
 		status := new(bareknews.Status)
+		dateCreated := new(int64)
+		dateUpdted := new(int64)
 
-		err = rows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
+		err = rows.Scan(
+			&post.ID,
+			&post.Title,
+			status,
+			&post.Body,
+			slug,
+			dateCreated,
+			dateUpdted,
+		)
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "scan a news item")
 		}
@@ -226,6 +258,8 @@ func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
 			Post:   post,
 			Status: *status,
 			Slug:   *slug,
+			DateCreated: *dateCreated,
+			DateUpdated: *dateUpdted,
 		})
 	}
 
@@ -238,12 +272,15 @@ func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
 		return []news.News{}, errors.Wrap(err, "could not get tag ids")
 	}
 
+	// Reconstruct news with addition TagsID property.
 	for i, elem := range newsResults {
 		newsResults[i] = news.News{
 			Post:   elem.Post,
 			Status: elem.Status,
 			Slug:   elem.Slug,
 			TagsID: tagIdBucket[elem.Post.ID],
+			DateCreated: elem.DateCreated,
+			DateUpdated: elem.DateUpdated,
 		}
 	}
 
@@ -265,7 +302,15 @@ func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News,
 	newsIdMark := sqlbuilder.List(newsIdsStr)
 	builder := sqlbuilder.NewSelectBuilder()
 
-	builder.Select("id", "title", "status", "body", "slug")
+	builder.Select(
+		"id",
+		"title",
+		"status",
+		"body",
+		"slug",
+		"date_created",
+		"date_updated",
+	)
 	builder.From("news")
 	builder.Where(builder.In("id", newsIdMark))
 	newsQuery, newsArgs := builder.Build()
@@ -284,7 +329,18 @@ func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News,
 		post := bareknews.Post{}
 		slug := new(bareknews.Slug)
 		status := new(bareknews.Status)
-		err = newsRows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
+		dateCreated := new(int64)
+		dateUpdted := new(int64)
+
+		err = newsRows.Scan(
+			&post.ID,
+			&post.Title,
+			status,
+			&post.Body,
+			slug,
+			dateCreated,
+			dateUpdted,
+		)
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "scan a news item")
 		}
@@ -295,6 +351,8 @@ func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News,
 			Post:   post,
 			Status: *status,
 			Slug:   *slug,
+			DateCreated: *dateCreated,
+			DateUpdated: *dateUpdted,
 		})
 	}
 
@@ -307,12 +365,15 @@ func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News,
 		return []news.News{}, errors.Wrap(err, "could not get tag ids in bucket")
 	}
 
+	// Reconstruct news with addition TagsID property.
 	for i, elem := range newsResult {
 		newsResult[i] = news.News{
 			Post:   elem.Post,
 			Status: elem.Status,
 			Slug:   elem.Slug,
 			TagsID: tagIdsBucket[elem.Post.ID],
+			DateCreated: elem.DateCreated,
+			DateUpdated: elem.DateUpdated,
 		}
 	}
 
@@ -322,7 +383,15 @@ func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News,
 func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]news.News, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 
-	builder.Select("id", "title", "status", "body", "slug")
+	builder.Select(
+		"id",
+		"title",
+		"status",
+		"body",
+		"slug",
+		"date_created",
+		"date_updated",
+	)
 	builder.From("news")
 	builder.Where(builder.Equal("status", status))
 	newsQuery, newsArgs := builder.Build()
@@ -341,6 +410,8 @@ func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]n
 		post := bareknews.Post{}
 		slug := new(bareknews.Slug)
 		status := new(bareknews.Status)
+		dateCreated := new(int64)
+		dateUpdted := new(int64)
 
 		err = newsRows.Scan(
 			&post.ID,
@@ -348,6 +419,8 @@ func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]n
 			status,
 			&post.Body,
 			slug,
+			dateCreated,
+			dateUpdted,
 		)
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "scan a news item")
@@ -359,6 +432,8 @@ func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]n
 			Post:   post,
 			Status: *status,
 			Slug:   *slug,
+			DateCreated: *dateCreated,
+			DateUpdated: *dateUpdted,
 		})
 	}
 
@@ -371,12 +446,15 @@ func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]n
 		return []news.News{}, errors.Wrap(err, "could not get tag ids in bucket")
 	}
 
+	// Reconstruct news with addition TagsID property.
 	for i, elem := range newsResult {
 		newsResult[i] = news.News{
 			Post:   elem.Post,
 			Status: elem.Status,
 			Slug:   elem.Slug,
 			TagsID: tagIdsBucket[elem.Post.ID],
+			DateCreated: elem.DateCreated,
+			DateUpdated: elem.DateUpdated,
 		}
 	}
 

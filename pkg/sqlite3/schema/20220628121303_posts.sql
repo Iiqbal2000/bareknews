@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS news(
 	title VARCHAR (127) NOT NULL UNIQUE,
 	slug VARCHAR (127) NOT NULL UNIQUE,
 	status VARCHAR (127) NOT NULL,
-	body TEXT NOT NULL
+	body TEXT NOT NULL,
+	date_created INT NOT NULL,
+	date_updated INT NOT NULL
 );
 -- +goose StatementEnd
 

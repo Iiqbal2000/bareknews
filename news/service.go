@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/tags"
@@ -25,6 +26,8 @@ type NewsOut struct {
 	Status string         `json:"status"`
 	Slug   string         `json:"slug"`
 	Tags   []tags.TagsOut `json:"tags"`
+	DateCreated  int64 `json:"date_created"`
+	DateUpdated  int64 `json:"date_updated"`
 }
 
 func createNewsOut(n *News, tgs []tags.TagsOut) NewsOut {
@@ -35,6 +38,8 @@ func createNewsOut(n *News, tgs []tags.TagsOut) NewsOut {
 		Status: n.Status.String(),
 		Slug:   n.Slug.String(),
 		Tags:   tgs,
+		DateCreated: n.DateCreated,
+		DateUpdated: n.DateUpdated,
 	}
 }
 
@@ -55,7 +60,13 @@ func (s Service) Create(ctx context.Context, input NewsIn) (NewsOut, error) {
 		tgId = append(tgId, t.ID)
 	}
 
-	news := Create(input.Title, input.Body, bareknews.Status(input.Status), tgId)
+	news := Create(
+		input.Title,
+		input.Body,
+		bareknews.Status(input.Status),
+		tgId, 
+		time.Now().Unix(),
+	)
 	err := news.Validate()
 	if err != nil {
 		return NewsOut{}, err
@@ -90,6 +101,8 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, input NewsIn) (NewsOu
 	if input.Status != "" && strings.TrimSpace(input.Status) != "" {
 		news.ChangeStatus(bareknews.Status(input.Status))
 	}
+
+	news.ChangeDateUpdated(time.Now().Unix())
 
 	if len(input.Tags) > 0 {
 		tg := s.taggingSvc.GetByNames(ctx, input.Tags)
