@@ -60,12 +60,15 @@ func run(log *zap.SugaredLogger) error {
 			APIHost         string        `conf:"default:0.0.0.0:3333"`
 			DebugHost       string        `conf:"default:0.0.0.0:4000"`
 		}
-		DB string `conf:"default:./bareknews.db"`
+		Database struct {
+			URI string `conf:"default:./bareknews.db"`
+			DroptAllTablesFirst bool `conf:"default:false"`
+		}
 	}{}
 
 	// prefix contains a namespace for env variables.
 	const prefix = "NEWS"
-	_, err := conf.Parse(prefix, &cfg)
+	help, err := conf.Parse(prefix, &cfg)
 	if err != nil {
 		if errors.Is(err, conf.ErrHelpWanted) {
 			fmt.Println(help)
@@ -89,16 +92,16 @@ func run(log *zap.SugaredLogger) error {
 
 	// Run sqlite.
 	dbConn, err := sqlite3.Run(sqlite3.Config{
-		URI: cfg.DB,
+		URI: cfg.Database.URI,
 		Log: log,
-		DropTableFirst: true,
+		DropTableFirst: cfg.Database.DroptAllTablesFirst,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to connect db")
 	}
 
 	defer func() {
-		log.Infow("shutdown", "status", "stopping database support", "host", cfg.DB)
+		log.Infow("shutdown", "status", "stopping database support", "host", cfg.Database.URI)
 		dbConn.Close()
 	}()
 
