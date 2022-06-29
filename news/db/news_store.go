@@ -207,7 +207,7 @@ func (s Store) Count(ctx context.Context, id uuid.UUID) (int, error) {
 	return result, nil
 }
 
-func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
+func (s Store) GetAll(ctx context.Context, cursor int64, limit int) ([]news.News, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 
 	builder.Select(
@@ -220,6 +220,19 @@ func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
 		"date_updated",
 	)
 	builder.From("news")
+
+	if cursor != 0 {
+		builder.Where(builder.LessThan("date_created", cursor))
+	}
+
+	builder.OrderBy("date_created").Desc()
+
+	if limit == 0 {
+		limit = 2
+	}
+
+	builder.Limit(limit)
+
 	query, args := builder.Build()
 
 	rows, err := s.conn.QueryContext(ctx, query, args...)
@@ -287,7 +300,100 @@ func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
 	return newsResults, nil
 }
 
-func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News, error) {
+func (s Store) GetAllByPagination(ctx context.Context, cursor int64, limit int) ([]news.News, error) {
+	builder := sqlbuilder.NewSelectBuilder()
+
+	builder.Select(
+		"id",
+		"title",
+		"status",
+		"body",
+		"slug",
+		"date_created",
+		"date_updated",
+	)
+	builder.From("news")
+
+	if cursor != 0 {
+		builder.Where(builder.LessThan("date_created", cursor))
+	}
+
+	builder.OrderBy("date_created").Desc()
+
+	if limit == 0 {
+		limit = 2
+	}
+
+	builder.Limit(limit)
+
+	query, args := builder.Build()
+
+	rows, err := s.conn.QueryContext(ctx, query, args...)
+	if err != nil {
+		return []news.News{}, errors.Wrap(err, "exec the query")
+	}
+
+	defer rows.Close()
+
+	newsResults := make([]news.News, 0)
+	postIds := make([]uuid.UUID, 0)
+
+	for rows.Next() {
+		post := bareknews.Post{}
+		slug := new(bareknews.Slug)
+		status := new(bareknews.Status)
+		dateCreated := new(int64)
+		dateUpdted := new(int64)
+
+		err = rows.Scan(
+			&post.ID,
+			&post.Title,
+			status,
+			&post.Body,
+			slug,
+			dateCreated,
+			dateUpdted,
+		)
+		if err != nil {
+			return []news.News{}, errors.Wrap(err, "scan a news item")
+		}
+
+		postIds = append(postIds, post.ID)
+
+		newsResults = append(newsResults, news.News{
+			Post:   post,
+			Status: *status,
+			Slug:   *slug,
+			DateCreated: *dateCreated,
+			DateUpdated: *dateUpdted,
+		})
+	}
+
+	if rows.Err() != nil {
+		return []news.News{}, errors.Wrap(err, "failed get items during iteration")
+	}
+
+	tagIdBucket, err := s.getAllNewsTagsIds(ctx, postIds)
+	if err != nil {
+		return []news.News{}, errors.Wrap(err, "could not get tag ids")
+	}
+
+	// Reconstruct news with addition TagsID property.
+	for i, elem := range newsResults {
+		newsResults[i] = news.News{
+			Post:   elem.Post,
+			Status: elem.Status,
+			Slug:   elem.Slug,
+			TagsID: tagIdBucket[elem.Post.ID],
+			DateCreated: elem.DateCreated,
+			DateUpdated: elem.DateUpdated,
+		}
+	}
+
+	return newsResults, nil
+}
+
+func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID, cursor int64, limit int) ([]news.News, error) {
 	newsIDs, err := s.getAllNewsIds(ctx, topic)
 	if err != nil {
 		return []news.News{}, errors.Wrap(err, "could not get news ids")
@@ -313,6 +419,19 @@ func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News,
 	)
 	builder.From("news")
 	builder.Where(builder.In("id", newsIdMark))
+
+	if cursor != 0 {
+		builder.Where(builder.LessThan("date_created", cursor))
+	}
+
+	builder.OrderBy("date_created").Desc()
+
+	if limit == 0 {
+		limit = 2
+	}
+
+	builder.Limit(limit)
+
 	newsQuery, newsArgs := builder.Build()
 
 	newsRows, err := s.conn.QueryContext(ctx, newsQuery, newsArgs...)
@@ -380,7 +499,7 @@ func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News,
 	return newsResult, nil
 }
 
-func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]news.News, error) {
+func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status, cursor int64, limit int) ([]news.News, error) {
 	builder := sqlbuilder.NewSelectBuilder()
 
 	builder.Select(
@@ -392,8 +511,22 @@ func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]n
 		"date_created",
 		"date_updated",
 	)
+
 	builder.From("news")
 	builder.Where(builder.Equal("status", status))
+
+	if cursor != 0 {
+		builder.Where(builder.LessThan("date_created", cursor))
+	}
+
+	builder.OrderBy("date_created").Desc()
+
+	if limit == 0 {
+		limit = 2
+	}
+
+	builder.Limit(limit)
+
 	newsQuery, newsArgs := builder.Build()
 
 	newsRows, err := s.conn.QueryContext(ctx, newsQuery, newsArgs...)

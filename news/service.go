@@ -169,8 +169,8 @@ func (s Service) GetById(ctx context.Context, id uuid.UUID) (NewsOut, error) {
 	return createNewsOut(news, tgs), nil
 }
 
-func (s Service) GetAll(ctx context.Context) ([]NewsOut, error) {
-	nws, err := s.store.GetAll(ctx)
+func (s Service) GetAll(ctx context.Context, cursor int64) ([]NewsOut, error) {
+	nws, err := s.store.GetAll(ctx, cursor, 2)
 	if err != nil {
 		return []NewsOut{}, errors.Wrap(err, "get all news items")
 	}
@@ -189,10 +189,10 @@ func (s Service) GetAll(ctx context.Context) ([]NewsOut, error) {
 	return r, nil
 }
 
-func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]NewsOut, error) {
+func (s Service) GetAllByTopic(ctx context.Context, topic string, cursor int64) ([]NewsOut, error) {
 	tg := s.taggingSvc.GetByName(ctx, topic)
 
-	newsItems, err := s.store.GetAllByTopic(ctx, tg.ID)
+	newsItems, err := s.store.GetAllByTopic(ctx, tg.ID, cursor, 2)
 	if err != nil {
 		return []NewsOut{}, errors.Wrap(err, "get all news items by topic")
 	}
@@ -211,14 +211,14 @@ func (s Service) GetAllByTopic(ctx context.Context, topic string) ([]NewsOut, er
 	return r, nil
 }
 
-func (s Service) GetAllByStatus(ctx context.Context, statusIn string) ([]NewsOut, error) {
+func (s Service) GetAllByStatus(ctx context.Context, statusIn string, cursor int64) ([]NewsOut, error) {
 	status := bareknews.Status(statusIn)
 	err := status.Validate()
 	if err != nil {
 		return []NewsOut{}, err
 	}
 
-	nws, err := s.store.GetAllByStatus(ctx, status)
+	nws, err := s.store.GetAllByStatus(ctx, status, cursor, 2)
 	if err != nil {
 		return []NewsOut{}, errors.Wrap(err, "get all news items by status")
 	}

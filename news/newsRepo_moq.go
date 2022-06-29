@@ -26,13 +26,13 @@ var _ Repository = &RepositoryMock{}
 // 			DeleteFunc: func(contextMoqParam context.Context, uUID uuid.UUID) error {
 // 				panic("mock out the Delete method")
 // 			},
-// 			GetAllFunc: func(contextMoqParam context.Context) ([]News, error) {
+// 			GetAllFunc: func(ctx context.Context, cursor int64, limit int) ([]News, error) {
 // 				panic("mock out the GetAll method")
 // 			},
-// 			GetAllByStatusFunc: func(ctx context.Context, status bareknews.Status) ([]News, error) {
+// 			GetAllByStatusFunc: func(ctx context.Context, status bareknews.Status, cursor int64, limit int) ([]News, error) {
 // 				panic("mock out the GetAllByStatus method")
 // 			},
-// 			GetAllByTopicFunc: func(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error) {
+// 			GetAllByTopicFunc: func(ctx context.Context, id uuid.UUID, cursor int64, limit int) ([]News, error) {
 // 				panic("mock out the GetAllByTopic method")
 // 			},
 // 			GetByIdFunc: func(contextMoqParam context.Context, uUID uuid.UUID) (*News, error) {
@@ -58,13 +58,13 @@ type RepositoryMock struct {
 	DeleteFunc func(contextMoqParam context.Context, uUID uuid.UUID) error
 
 	// GetAllFunc mocks the GetAll method.
-	GetAllFunc func(contextMoqParam context.Context) ([]News, error)
+	GetAllFunc func(ctx context.Context, cursor int64, limit int) ([]News, error)
 
 	// GetAllByStatusFunc mocks the GetAllByStatus method.
-	GetAllByStatusFunc func(ctx context.Context, status bareknews.Status) ([]News, error)
+	GetAllByStatusFunc func(ctx context.Context, status bareknews.Status, cursor int64, limit int) ([]News, error)
 
 	// GetAllByTopicFunc mocks the GetAllByTopic method.
-	GetAllByTopicFunc func(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error)
+	GetAllByTopicFunc func(ctx context.Context, id uuid.UUID, cursor int64, limit int) ([]News, error)
 
 	// GetByIdFunc mocks the GetById method.
 	GetByIdFunc func(contextMoqParam context.Context, uUID uuid.UUID) (*News, error)
@@ -93,8 +93,12 @@ type RepositoryMock struct {
 		}
 		// GetAll holds details about calls to the GetAll method.
 		GetAll []struct {
-			// ContextMoqParam is the contextMoqParam argument value.
-			ContextMoqParam context.Context
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Cursor is the cursor argument value.
+			Cursor int64
+			// Limit is the limit argument value.
+			Limit int
 		}
 		// GetAllByStatus holds details about calls to the GetAllByStatus method.
 		GetAllByStatus []struct {
@@ -102,13 +106,21 @@ type RepositoryMock struct {
 			Ctx context.Context
 			// Status is the status argument value.
 			Status bareknews.Status
+			// Cursor is the cursor argument value.
+			Cursor int64
+			// Limit is the limit argument value.
+			Limit int
 		}
 		// GetAllByTopic holds details about calls to the GetAllByTopic method.
 		GetAllByTopic []struct {
-			// ContextMoqParam is the contextMoqParam argument value.
-			ContextMoqParam context.Context
-			// UUID is the uUID argument value.
-			UUID uuid.UUID
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uuid.UUID
+			// Cursor is the cursor argument value.
+			Cursor int64
+			// Limit is the limit argument value.
+			Limit int
 		}
 		// GetById holds details about calls to the GetById method.
 		GetById []struct {
@@ -213,29 +225,37 @@ func (mock *RepositoryMock) DeleteCalls() []struct {
 }
 
 // GetAll calls GetAllFunc.
-func (mock *RepositoryMock) GetAll(contextMoqParam context.Context) ([]News, error) {
+func (mock *RepositoryMock) GetAll(ctx context.Context, cursor int64, limit int) ([]News, error) {
 	if mock.GetAllFunc == nil {
 		panic("RepositoryMock.GetAllFunc: method is nil but Repository.GetAll was just called")
 	}
 	callInfo := struct {
-		ContextMoqParam context.Context
+		Ctx    context.Context
+		Cursor int64
+		Limit  int
 	}{
-		ContextMoqParam: contextMoqParam,
+		Ctx:    ctx,
+		Cursor: cursor,
+		Limit:  limit,
 	}
 	mock.lockGetAll.Lock()
 	mock.calls.GetAll = append(mock.calls.GetAll, callInfo)
 	mock.lockGetAll.Unlock()
-	return mock.GetAllFunc(contextMoqParam)
+	return mock.GetAllFunc(ctx, cursor, limit)
 }
 
 // GetAllCalls gets all the calls that were made to GetAll.
 // Check the length with:
 //     len(mockedRepository.GetAllCalls())
 func (mock *RepositoryMock) GetAllCalls() []struct {
-	ContextMoqParam context.Context
+	Ctx    context.Context
+	Cursor int64
+	Limit  int
 } {
 	var calls []struct {
-		ContextMoqParam context.Context
+		Ctx    context.Context
+		Cursor int64
+		Limit  int
 	}
 	mock.lockGetAll.RLock()
 	calls = mock.calls.GetAll
@@ -244,21 +264,25 @@ func (mock *RepositoryMock) GetAllCalls() []struct {
 }
 
 // GetAllByStatus calls GetAllByStatusFunc.
-func (mock *RepositoryMock) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]News, error) {
+func (mock *RepositoryMock) GetAllByStatus(ctx context.Context, status bareknews.Status, cursor int64, limit int) ([]News, error) {
 	if mock.GetAllByStatusFunc == nil {
 		panic("RepositoryMock.GetAllByStatusFunc: method is nil but Repository.GetAllByStatus was just called")
 	}
 	callInfo := struct {
 		Ctx    context.Context
 		Status bareknews.Status
+		Cursor int64
+		Limit  int
 	}{
 		Ctx:    ctx,
 		Status: status,
+		Cursor: cursor,
+		Limit:  limit,
 	}
 	mock.lockGetAllByStatus.Lock()
 	mock.calls.GetAllByStatus = append(mock.calls.GetAllByStatus, callInfo)
 	mock.lockGetAllByStatus.Unlock()
-	return mock.GetAllByStatusFunc(ctx, status)
+	return mock.GetAllByStatusFunc(ctx, status, cursor, limit)
 }
 
 // GetAllByStatusCalls gets all the calls that were made to GetAllByStatus.
@@ -267,10 +291,14 @@ func (mock *RepositoryMock) GetAllByStatus(ctx context.Context, status bareknews
 func (mock *RepositoryMock) GetAllByStatusCalls() []struct {
 	Ctx    context.Context
 	Status bareknews.Status
+	Cursor int64
+	Limit  int
 } {
 	var calls []struct {
 		Ctx    context.Context
 		Status bareknews.Status
+		Cursor int64
+		Limit  int
 	}
 	mock.lockGetAllByStatus.RLock()
 	calls = mock.calls.GetAllByStatus
@@ -279,33 +307,41 @@ func (mock *RepositoryMock) GetAllByStatusCalls() []struct {
 }
 
 // GetAllByTopic calls GetAllByTopicFunc.
-func (mock *RepositoryMock) GetAllByTopic(contextMoqParam context.Context, uUID uuid.UUID) ([]News, error) {
+func (mock *RepositoryMock) GetAllByTopic(ctx context.Context, id uuid.UUID, cursor int64, limit int) ([]News, error) {
 	if mock.GetAllByTopicFunc == nil {
 		panic("RepositoryMock.GetAllByTopicFunc: method is nil but Repository.GetAllByTopic was just called")
 	}
 	callInfo := struct {
-		ContextMoqParam context.Context
-		UUID            uuid.UUID
+		Ctx    context.Context
+		ID     uuid.UUID
+		Cursor int64
+		Limit  int
 	}{
-		ContextMoqParam: contextMoqParam,
-		UUID:            uUID,
+		Ctx:    ctx,
+		ID:     id,
+		Cursor: cursor,
+		Limit:  limit,
 	}
 	mock.lockGetAllByTopic.Lock()
 	mock.calls.GetAllByTopic = append(mock.calls.GetAllByTopic, callInfo)
 	mock.lockGetAllByTopic.Unlock()
-	return mock.GetAllByTopicFunc(contextMoqParam, uUID)
+	return mock.GetAllByTopicFunc(ctx, id, cursor, limit)
 }
 
 // GetAllByTopicCalls gets all the calls that were made to GetAllByTopic.
 // Check the length with:
 //     len(mockedRepository.GetAllByTopicCalls())
 func (mock *RepositoryMock) GetAllByTopicCalls() []struct {
-	ContextMoqParam context.Context
-	UUID            uuid.UUID
+	Ctx    context.Context
+	ID     uuid.UUID
+	Cursor int64
+	Limit  int
 } {
 	var calls []struct {
-		ContextMoqParam context.Context
-		UUID            uuid.UUID
+		Ctx    context.Context
+		ID     uuid.UUID
+		Cursor int64
+		Limit  int
 	}
 	mock.lockGetAllByTopic.RLock()
 	calls = mock.calls.GetAllByTopic

@@ -219,7 +219,7 @@ func TestDelete(t *testing.T) {
 
 func TestGetAllByStatus(t *testing.T) {
 	nwsStore := &news.RepositoryMock{
-		GetAllByStatusFunc: func(ctx context.Context, status bareknews.Status) ([]news.News, error) {
+		GetAllByStatusFunc: func(ctx context.Context, status bareknews.Status, cursor int64, limit int) ([]news.News, error) {
 			return nil, nil
 		},
 	}
@@ -228,15 +228,15 @@ func TestGetAllByStatus(t *testing.T) {
 	nwsSvc := news.CreateSvc(nwsStore, tags.CreateSvc(tgStore))
 
 	is := is.New(t)
-	_, err := nwsSvc.GetAllByStatus(context.TODO(), "draft")
+	_, err := nwsSvc.GetAllByStatus(context.TODO(), "draft", 0)
 	is.NoErr(err)
 
-	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publish")
+	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publish", 0)
 	is.NoErr(err)
 
-	_, err = nwsSvc.GetAllByStatus(context.TODO(), "")
+	_, err = nwsSvc.GetAllByStatus(context.TODO(), "", 0)
 	is.True(err != nil)
 
-	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publsjsja")
+	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publsjsja", 0)
 	is.True(err != nil)
 }

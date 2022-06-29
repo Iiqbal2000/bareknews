@@ -3,6 +3,7 @@ package news
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Iiqbal2000/bareknews"
@@ -231,12 +232,26 @@ func (n handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	topic := strings.TrimSpace(q.Get("topic"))
 	status := strings.TrimSpace(q.Get("status"))
+	rawCursor := strings.TrimSpace(q.Get("cursor"))
+
+	if rawCursor == "" {
+		rawCursor = "0"
+	}
+
+	cursor, err := strconv.ParseInt(rawCursor, 10, 64)
+	if err != nil {
+		err = web.WriteErrResponse(w, n.log, err)
+		if err != nil {
+			n.log.Error(errors.Wrap(err, "failed to convert the cursor"))
+		}
+		return
+	}
 
 	newsRes := make([]NewsOut, 0)
 
 	switch {
 	case topic != "" && status != "":
-		nws, err := n.service.GetAllByTopic(ctx, topic)
+		nws, err := n.service.GetAllByTopic(ctx, topic, cursor)
 		if err != nil {
 			err = web.WriteErrResponse(w, n.log, err)
 			if err != nil {
@@ -251,7 +266,7 @@ func (n handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case topic == "" && status != "":
-		nws, err := n.service.GetAllByStatus(ctx, status)
+		nws, err := n.service.GetAllByStatus(ctx, status, cursor)
 		if err != nil {
 			err = web.WriteErrResponse(w, n.log, err)
 			if err != nil {
@@ -262,7 +277,7 @@ func (n handler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 		newsRes = append(newsRes, nws...)
 	case topic != "" && status == "":
-		nws, err := n.service.GetAllByTopic(ctx, topic)
+		nws, err := n.service.GetAllByTopic(ctx, topic, cursor)
 		if err != nil {
 			err = web.WriteErrResponse(w, n.log, err)
 			if err != nil {
@@ -273,7 +288,7 @@ func (n handler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 		newsRes = append(newsRes, nws...)
 	default:
-		nws, err := n.service.GetAll(ctx)
+		nws, err := n.service.GetAll(ctx, cursor)
 		if err != nil {
 			err = web.WriteErrResponse(w, n.log, err)
 			if err != nil {
@@ -291,7 +306,7 @@ func (n handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	err := json.NewEncoder(w).Encode(payloadRes)
+	err = json.NewEncoder(w).Encode(payloadRes)
 	if err != nil {
 		n.log.Error(errors.Wrap(err, "failed to write a response"))
 	}

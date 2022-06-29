@@ -145,7 +145,7 @@ func TestGetAllNews(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	got, err := newsStore.GetAll(context.TODO())
+	got, err := newsStore.GetAll(context.TODO(), 0, 2)
 	is := is.New(t)
 	is.NoErr(err)
 	is.Equal(len(got), 2)
@@ -191,7 +191,7 @@ func TestGetAllByTopic(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	got, err := newsStore.GetAllByTopic(context.TODO(), tgId)
+	got, err := newsStore.GetAllByTopic(context.TODO(), tgId, 0, 2)
 	is := is.New(t)
 	is.NoErr(err)
 	is.Equal(len(got), 2)
@@ -225,7 +225,7 @@ func TestGetAllByStatus(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	got, err := newsStore.GetAllByStatus(context.TODO(), bareknews.Publish)
+	got, err := newsStore.GetAllByStatus(context.TODO(), bareknews.Publish, 0, 2)
 	is := is.New(t)
 	is.NoErr(err)
 	is.Equal(len(got), 1)
@@ -237,4 +237,104 @@ func TestGetAllByStatus(t *testing.T) {
 	is.True(got[0].DateCreated != 0)
 	is.True(got[0].DateUpdated != 0)
 	is.Equal(len(got[0].TagsID), 1)
+}
+
+func TestGetAllByPaginationNoCursor(t *testing.T) {
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: "./../../bareknews.db", DropTableFirst: true})
+	newsStore := db.CreateStore(conn)
+
+	tgId := uuid.New()
+
+	title1 := "news 1"
+	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
+
+	wantNews1 := news.Create(title1, body1, bareknews.Publish, []uuid.UUID{tgId}, time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC).Unix())
+	err := newsStore.Save(context.TODO(), *wantNews1)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	title2 := "news 2"
+	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+
+	wantNews2 := news.Create(title2, body2, bareknews.Draft, []uuid.UUID{tgId}, time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC).Unix())
+	err = newsStore.Save(context.TODO(), *wantNews2)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	title3 := "news 3"
+	body3 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+
+	wantNews3 := news.Create(title3, body3, bareknews.Draft, []uuid.UUID{tgId}, time.Date(2011, time.November, 10, 23, 0, 0, 0, time.UTC).Unix())
+	err = newsStore.Save(context.TODO(), *wantNews3)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	title4 := "news 4"
+	body4 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+
+	wantNews4 := news.Create(title4, body4, bareknews.Draft, []uuid.UUID{tgId}, time.Date(2012, time.November, 10, 23, 0, 0, 0, time.UTC).Unix())
+	err = newsStore.Save(context.TODO(), *wantNews4)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	is := is.New(t)
+
+	got, err := newsStore.GetAllByPagination(context.TODO(), 0, 2)
+	is.NoErr(err)
+
+	is.Equal(len(got), 2)
+}
+
+func TestGetAllByPaginationWithCursor(t *testing.T) {
+	conn, _ := sqlite3.Run(sqlite3.Config{URI: "./../../bareknews.db", DropTableFirst: true})
+	newsStore := db.CreateStore(conn)
+
+	tgId := uuid.New()
+
+	title1 := "news 1"
+	body1 := "Struct fields can also use tags to more specifically generate data for that field type."
+
+	wantNews1 := news.Create(title1, body1, bareknews.Publish, []uuid.UUID{tgId}, time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC).Unix())
+	err := newsStore.Save(context.TODO(), *wantNews1)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	title2 := "news 2"
+	body2 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+
+	wantNews2 := news.Create(title2, body2, bareknews.Draft, []uuid.UUID{tgId}, time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC).Unix())
+	err = newsStore.Save(context.TODO(), *wantNews2)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	title3 := "news 3"
+	body3 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+
+	wantNews3 := news.Create(title3, body3, bareknews.Draft, []uuid.UUID{tgId}, time.Date(2011, time.November, 10, 23, 0, 0, 0, time.UTC).Unix())
+	err = newsStore.Save(context.TODO(), *wantNews3)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	title4 := "news 4"
+	body4 := "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+
+	wantNews4 := news.Create(title4, body4, bareknews.Draft, []uuid.UUID{tgId}, time.Date(2012, time.November, 10, 23, 0, 0, 0, time.UTC).Unix())
+	err = newsStore.Save(context.TODO(), *wantNews4)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	is := is.New(t)
+
+	got, err := newsStore.GetAllByPagination(context.TODO(), wantNews3.DateCreated, 2)
+	is.NoErr(err)
+
+	is.Equal(len(got), 2)
 }
