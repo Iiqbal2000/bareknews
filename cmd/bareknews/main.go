@@ -68,6 +68,7 @@ func run(log *zap.SugaredLogger) error {
 	_, err := conf.Parse(prefix, &cfg)
 	if err != nil {
 		if errors.Is(err, conf.ErrHelpWanted) {
+			fmt.Println(help)
 			return nil
 		}
 		return errors.Wrap(err, "parsing config")
