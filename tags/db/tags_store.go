@@ -10,7 +10,11 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
+
+var tracer = otel.Tracer("github.com/Iiqbal2000/bareknews/tags/db")
 
 type Store struct {
 	conn *sql.DB
@@ -21,10 +25,16 @@ func CreateStore(conn *sql.DB) Store {
 }
 
 func (t Store) Save(ctx context.Context, tag tags.Tags) error {
-	query, args := sqlbuilder.InsertInto("tags").
-		Cols("id", "name", "slug").
-		Values(tag.Label.ID, tag.Label.Name, tag.Slug).
-		Build()
+	ctx, span := tracer.Start(ctx, "tags.db.Save")
+	defer span.End()
+
+	builder := sqlbuilder.InsertInto("tags").
+	Cols("id", "name", "slug").
+	Values(tag.Label.ID, tag.Label.Name, tag.Slug)
+
+	span.SetAttributes(attribute.String("sql query", builder.String()))
+
+	query, args := builder.Build()
 
 	_, err := t.conn.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -34,13 +44,16 @@ func (t Store) Save(ctx context.Context, tag tags.Tags) error {
 			}
 		}
 
-		return errors.Wrap(err, "storage.tags.save")
+		return errors.Wrap(err, "when executing the query")
 	}
 
 	return nil
 }
 
 func (t Store) Update(ctx context.Context, tag tags.Tags) error {
+	ctx, span := tracer.Start(ctx, "tags.db.Update")
+	defer span.End()
+
 	builder := sqlbuilder.NewUpdateBuilder()
 	builder.Update("tags")
 	builder.Set(
@@ -48,16 +61,20 @@ func (t Store) Update(ctx context.Context, tag tags.Tags) error {
 		builder.Assign("slug", tag.Slug),
 	)
 	builder.Where(builder.Equal("id", tag.Label.ID.String()))
+
 	query, args := builder.Build()
 	_, err := t.conn.ExecContext(ctx, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "storage.tags.update")
+		return errors.Wrap(err, "when executing the query")
 	}
 
 	return nil
 }
 
 func (t Store) Delete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := tracer.Start(ctx, "tags.db.Delete")
+	defer span.End()
+
 	d := sqlbuilder.NewDeleteBuilder()
 	d.DeleteFrom("tags")
 	d.Where(d.Equal("id", id))
@@ -66,28 +83,33 @@ func (t Store) Delete(ctx context.Context, id uuid.UUID) error {
 
 	_, err := t.conn.ExecContext(ctx, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "storage.tags.delete")
+		return errors.Wrap(err, "when executing the query")
 	}
 
 	return nil
 }
 
 func (t Store) GetById(ctx context.Context, id uuid.UUID) (*tags.Tags, error) {
+	ctx, span := tracer.Start(ctx, "tags.db.GetById")
+	defer span.End()
+
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select("id", "name", "slug")
 	builder.From("tags")
 	builder.Where(builder.Equal("id", id))
 	query, args := builder.Build()
+
 	row := t.conn.QueryRowContext(ctx, query, args...)
 
 	label := bareknews.Label{}
 	var slug bareknews.Slug
+
 	err := row.Scan(&label.ID, &label.Name, &slug)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &tags.Tags{}, sql.ErrNoRows
 		} else {
-			return &tags.Tags{}, errors.Wrap(err, "storage.tags.getById")
+			return &tags.Tags{}, errors.Wrap(err, "when scanning the data")
 		}
 	}
 
@@ -100,6 +122,9 @@ func (t Store) GetById(ctx context.Context, id uuid.UUID) (*tags.Tags, error) {
 }
 
 func (t Store) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, error) {
+	ctx, span := tracer.Start(ctx, "tags.db.GetByIds")
+	defer span.End()
+
 	builder := sqlbuilder.NewSelectBuilder()
 	idstr := make([]string, 0)
 
@@ -116,7 +141,7 @@ func (t Store) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, erro
 
 	rows, err := t.conn.QueryContext(ctx, query, args...)
 	if err != nil {
-		return []tags.Tags{}, errors.Wrap(err, "storage.tags.getByIds")
+		return []tags.Tags{}, errors.Wrap(err, "when executing the query")
 	}
 
 	defer rows.Close()
@@ -128,7 +153,7 @@ func (t Store) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, erro
 		var slug bareknews.Slug
 		err := rows.Scan(&label.ID, &label.Name, &slug)
 		if err != nil {
-			return []tags.Tags{}, errors.Wrap(err, "storage.tags.getByIds")
+			return []tags.Tags{}, errors.Wrap(err, "when scanning the data")
 		}
 
 		results = append(results, tags.Tags{
@@ -138,20 +163,23 @@ func (t Store) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, erro
 	}
 
 	if rows.Err() != nil {
-		return []tags.Tags{}, errors.Wrap(err, "storage.tags.getByIds")
+		return []tags.Tags{}, errors.Wrap(err, "when iterating rows")
 	}
 
 	return results, nil
 }
 
 func (t Store) GetAll(ctx context.Context) ([]tags.Tags, error) {
+	ctx, span := tracer.Start(ctx, "tags.db.GetAll")
+	defer span.End()
+
 	query, args := sqlbuilder.Select("id", "name", "slug").
 		From("tags").
 		Build()
 
 	rows, err := t.conn.QueryContext(ctx, query, args...)
 	if err != nil {
-		return []tags.Tags{}, errors.Wrap(err, "storage.tags.getAll")
+		return []tags.Tags{}, errors.Wrap(err, "when executing the query")
 	}
 
 	defer rows.Close()
@@ -163,7 +191,7 @@ func (t Store) GetAll(ctx context.Context) ([]tags.Tags, error) {
 		var slug bareknews.Slug
 		err := rows.Scan(&label.ID, &label.Name, &slug)
 		if err != nil {
-			return []tags.Tags{}, errors.Wrap(err, "storage.tags.getAll")
+			return []tags.Tags{}, errors.Wrap(err, "when executing the data")
 		}
 
 		results = append(results, tags.Tags{
@@ -173,13 +201,16 @@ func (t Store) GetAll(ctx context.Context) ([]tags.Tags, error) {
 	}
 
 	if rows.Err() != nil {
-		return []tags.Tags{}, errors.Wrap(err, "storage.tags.getAll")
+		return []tags.Tags{}, errors.Wrap(err, "when iterating rows")
 	}
 
 	return results, nil
 }
 
 func (t Store) Count(ctx context.Context, id uuid.UUID) (int, error) {
+	ctx, span := tracer.Start(ctx, "tags.db.Count")
+	defer span.End()
+
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Select(builder.As("COUNT(id)", "c"))
 	builder.From("tags")
@@ -190,7 +221,7 @@ func (t Store) Count(ctx context.Context, id uuid.UUID) (int, error) {
 	var c int
 	err := row.Scan(&c)
 	if err != nil {
-		return c, errors.Wrap(err, "storage.tags.count")
+		return c, errors.Wrap(err, "when scanning the data")
 	}
 
 	if c == 0 {
@@ -201,6 +232,9 @@ func (t Store) Count(ctx context.Context, id uuid.UUID) (int, error) {
 }
 
 func (t Store) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, error) {
+	ctx, span := tracer.Start(ctx, "tags.db.GetByNames")
+	defer span.End()
+	
 	builder := sqlbuilder.NewSelectBuilder()
 	listMark := sqlbuilder.List(names)
 	builder.Select("id", "name", "slug")
@@ -210,7 +244,7 @@ func (t Store) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, er
 
 	rows, err := t.conn.QueryContext(ctx, query, args...)
 	if err != nil {
-		return []tags.Tags{}, errors.Wrap(err, "storage.tags.getByNames")
+		return []tags.Tags{}, errors.Wrap(err, "when executing the query")
 	}
 
 	defer rows.Close()
@@ -222,7 +256,7 @@ func (t Store) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, er
 		var slug bareknews.Slug
 		err := rows.Scan(&label.ID, &label.Name, &slug)
 		if err != nil {
-			return []tags.Tags{}, errors.Wrap(err, "storage.tags.getByNames")
+			return []tags.Tags{}, errors.Wrap(err, "when scanning the data")
 		}
 
 		results = append(results, tags.Tags{
@@ -235,23 +269,26 @@ func (t Store) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, er
 }
 
 func (t Store) GetByName(ctx context.Context, name string) (tags.Tags, error) {
+	ctx, span := tracer.Start(ctx, "tags.db.GetByName")
+	defer span.End()
+	
 	queryBuilder := sqlbuilder.NewSelectBuilder()
 	queryBuilder.Select("id", "name", "slug")
 	queryBuilder.From("tags")
 	queryBuilder.Where(queryBuilder.Equal("name", name))
-	
+
 	query, args := queryBuilder.Build()
 	row := t.conn.QueryRowContext(ctx, query, args...)
 
 	label := bareknews.Label{}
 	var slug bareknews.Slug
-	
+
 	err := row.Scan(&label.ID, &label.Name, &slug)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return tags.Tags{}, sql.ErrNoRows
 		} else {
-			return tags.Tags{}, errors.Wrap(err, "storage.tags.GetByName")
+			return tags.Tags{}, errors.Wrap(err, "when scannig the data")
 		}
 	}
 
@@ -262,4 +299,3 @@ func (t Store) GetByName(ctx context.Context, name string) (tags.Tags, error) {
 
 	return tag, nil
 }
-

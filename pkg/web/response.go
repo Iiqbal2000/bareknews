@@ -10,15 +10,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// RespBody represents the common response body for JSON type.
-type RespBody struct {
+// GeneralResponse represents the common response body for JSON type.
+type GeneralResponse struct {
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 }
 
-// ErrRespBody represents an error response body for JSON type.
-type ErrRespBody struct {
-	Err map[string]interface{} `json:"error" swaggertype:"object"`
+// ErrorResponse represents an error response body for JSON type.
+type ErrorResponse struct {
+	Error  string                 `json:"error"`
+	Fields map[string]interface{} `json:"fields,omitempty" swaggertype:"object"`
 }
 
 func WriteErrResponse(w http.ResponseWriter, log *zap.SugaredLogger, err error) error {
@@ -37,10 +38,15 @@ func WriteErrResponse(w http.ResponseWriter, log *zap.SugaredLogger, err error) 
 	}
 
 	return json.NewEncoder(w).Encode(
-		ErrRespBody{
-			Err: map[string]interface{}{
-				"message": err.Error(),
-			},
+		ErrorResponse{
+			Error: err.Error(),
 		},
 	)
+}
+
+// Respond sends a JSON response to the client
+func Respond(w http.ResponseWriter, data any, statusCode int) error {
+	w.WriteHeader(statusCode)
+	err := json.NewEncoder(w).Encode(data)
+	return err
 }

@@ -10,7 +10,10 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("github.com/Iiqbal2000/bareknews/news/db")
 
 type Store struct {
 	conn *sql.DB
@@ -21,6 +24,9 @@ func CreateStore(conn *sql.DB) Store {
 }
 
 func (s Store) Save(ctx context.Context, n news.News) error {
+	ctx, span := tracer.Start(ctx, "news.db.Save")
+	defer span.End()
+
 	tx, err := s.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "begin tx")
@@ -30,13 +36,15 @@ func (s Store) Save(ctx context.Context, n news.News) error {
 
 	builder := sqlbuilder.NewInsertBuilder()
 	builder.InsertInto("news")
-	builder.Cols("id", "title", "slug", "status", "body")
+	builder.Cols("id", "title", "slug", "status", "body", "date_created", "date_updated")
 	builder.Values(
 		n.Post.ID,
 		n.Post.Title,
 		n.Slug,
 		n.Status,
 		n.Post.Body,
+		n.DateCreated,
+		n.DateUpdated,
 	)
 	query, args := builder.Build()
 
@@ -50,7 +58,7 @@ func (s Store) Save(ctx context.Context, n news.News) error {
 		return errors.Wrap(err, "exec the query")
 	}
 
-	err = s.insertNewsTagsRelation(tx, n)
+	err = s.insertNewsTagsRelation(ctx, tx, n)
 	if err != nil {
 		return errors.Wrap(err, "could not insert news-tags relation")
 	}
@@ -63,8 +71,11 @@ func (s Store) Save(ctx context.Context, n news.News) error {
 }
 
 func (s Store) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
+	ctx, span := tracer.Start(ctx, "news.db.GetById")
+	defer span.End()
+
 	builder := sqlbuilder.NewSelectBuilder()
-	builder.Select("id", "title", "status", "body", "slug")
+	builder.Select("id", "title", "status", "body", "slug", "date_created", "date_updated")
 	builder.From("news")
 	builder.Where(builder.Equal("id", id))
 
@@ -73,8 +84,10 @@ func (s Store) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
 	post := bareknews.Post{}
 	slug := new(bareknews.Slug)
 	status := new(bareknews.Status)
+	dateCreated := new(int64)
+	updateCreated := new(int64)
 
-	err := row.Scan(&post.ID, &post.Title, status, &post.Body, slug)
+	err := row.Scan(&post.ID, &post.Title, status, &post.Body, slug, dateCreated, updateCreated)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &news.News{}, sql.ErrNoRows
@@ -85,7 +98,7 @@ func (s Store) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
 
 	tagIdResults, err := s.getAllTagIds(ctx, post.ID)
 	if err != nil {
-		return &news.News{}, errors.Wrap(err, "could not get tag id")
+		return &news.News{}, errors.Wrap(err, "could not get tag ids")
 	}
 
 	result := &news.News{
@@ -93,11 +106,16 @@ func (s Store) GetById(ctx context.Context, id uuid.UUID) (*news.News, error) {
 		Slug:   *slug,
 		Status: *status,
 		TagsID: tagIdResults,
+		DateCreated: *dateCreated,
+		DateUpdated: *updateCreated,
 	}
 	return result, nil
 }
 
 func (s Store) Update(ctx context.Context, n news.News) error {
+	ctx, span := tracer.Start(ctx, "news.db.Update")
+	defer span.End()
+
 	tx, err := s.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "begin tx")
@@ -112,7 +130,9 @@ func (s Store) Update(ctx context.Context, n news.News) error {
 		builder.Assign("body", n.Post.Body),
 		builder.Assign("status", n.Status),
 		builder.Assign("slug", n.Slug),
+		builder.Assign("date_updated", n.DateUpdated),
 	)
+
 	builder.Where(builder.Equal("id", n.Post.ID))
 
 	query, args := builder.Build()
@@ -122,14 +142,14 @@ func (s Store) Update(ctx context.Context, n news.News) error {
 	}
 
 	// deleting relation between news and tags.
-	err = s.deleteNewsTagsRelation(tx, n.Post.ID)
+	err = s.deleteNewsTagsRelation(ctx, tx, n.Post.ID)
 	if err != nil {
 		return errors.Wrap(err, "could not delete news-tags relation")
 	}
 
 	// inserting new relation between news and tags if they
 	// exist.
-	err = s.insertNewsTagsRelation(tx, n)
+	err = s.insertNewsTagsRelation(ctx, tx, n)
 	if err != nil {
 		return errors.Wrap(err, "could not insert news-tags relation")
 	}
@@ -142,6 +162,9 @@ func (s Store) Update(ctx context.Context, n news.News) error {
 }
 
 func (s Store) Delete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := tracer.Start(ctx, "news.db.Delete")
+	defer span.End()
+
 	tx, err := s.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "begin tx")
@@ -149,7 +172,7 @@ func (s Store) Delete(ctx context.Context, id uuid.UUID) error {
 
 	defer tx.Rollback()
 
-	err = s.deleteNewsTagsRelation(tx, id)
+	err = s.deleteNewsTagsRelation(ctx, tx, id)
 	if err != nil {
 		return errors.Wrap(err, "could not delete news-tags relation")
 	}
@@ -171,6 +194,9 @@ func (s Store) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s Store) Count(ctx context.Context, id uuid.UUID) (int, error) {
+	ctx, span := tracer.Start(ctx, "news.db.Count")
+	defer span.End()
+
 	builder := sqlbuilder.NewSelectBuilder()
 
 	builder.Select(builder.As("COUNT(id)", "c"))
@@ -193,11 +219,26 @@ func (s Store) Count(ctx context.Context, id uuid.UUID) (int, error) {
 	return result, nil
 }
 
-func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
+func (s Store) GetAll(ctx context.Context, cursor int64, limit int) ([]news.News, error) {
+	ctx, span := tracer.Start(ctx, "news.db.GetAll")
+	defer span.End()
+
 	builder := sqlbuilder.NewSelectBuilder()
 
-	builder.Select("id", "title", "status", "body", "slug")
+	builder.Select("id", "title", "status", "body", "slug", "date_created", "date_updated")
 	builder.From("news")
+	if cursor != 0 {
+		builder.Where(builder.LessThan("date_created", cursor))
+	}
+
+	builder.OrderBy("date_created").Desc()
+
+	if limit == 0 {
+		limit = 2
+	}
+
+	builder.Limit(limit)
+
 	query, args := builder.Build()
 
 	rows, err := s.conn.QueryContext(ctx, query, args...)
@@ -214,8 +255,18 @@ func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
 		post := bareknews.Post{}
 		slug := new(bareknews.Slug)
 		status := new(bareknews.Status)
+		dateCreated := new(int64)
+		dateUpdted := new(int64)
 
-		err = rows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
+		err = rows.Scan(
+			&post.ID,
+			&post.Title,
+			status,
+			&post.Body,
+			slug,
+			dateCreated,
+			dateUpdted,
+		)
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "scan a news item")
 		}
@@ -226,6 +277,8 @@ func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
 			Post:   post,
 			Status: *status,
 			Slug:   *slug,
+			DateCreated: *dateCreated,
+			DateUpdated: *dateUpdted,
 		})
 	}
 
@@ -238,19 +291,121 @@ func (s Store) GetAll(ctx context.Context) ([]news.News, error) {
 		return []news.News{}, errors.Wrap(err, "could not get tag ids")
 	}
 
+	// Reconstruct news with addition TagsID property.
 	for i, elem := range newsResults {
 		newsResults[i] = news.News{
 			Post:   elem.Post,
 			Status: elem.Status,
 			Slug:   elem.Slug,
 			TagsID: tagIdBucket[elem.Post.ID],
+			DateCreated: elem.DateCreated,
+			DateUpdated: elem.DateUpdated,
 		}
 	}
 
 	return newsResults, nil
 }
 
-func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News, error) {
+func (s Store) GetAllByPagination(ctx context.Context, cursor int64, limit int) ([]news.News, error) {
+	ctx, span := tracer.Start(ctx, "news.db.GetAllByPagination")
+	defer span.End()
+
+	builder := sqlbuilder.NewSelectBuilder()
+
+	builder.Select(
+		"id",
+		"title",
+		"status",
+		"body",
+		"slug",
+		"date_created",
+		"date_updated",
+	)
+	builder.From("news")
+
+	if cursor != 0 {
+		builder.Where(builder.LessThan("date_created", cursor))
+	}
+
+	builder.OrderBy("date_created").Desc()
+
+	if limit == 0 {
+		limit = 2
+	}
+
+	builder.Limit(limit)
+
+	query, args := builder.Build()
+
+	rows, err := s.conn.QueryContext(ctx, query, args...)
+	if err != nil {
+		return []news.News{}, errors.Wrap(err, "exec the query")
+	}
+
+	defer rows.Close()
+
+	newsResults := make([]news.News, 0)
+	postIds := make([]uuid.UUID, 0)
+
+	for rows.Next() {
+		post := bareknews.Post{}
+		slug := new(bareknews.Slug)
+		status := new(bareknews.Status)
+		dateCreated := new(int64)
+		dateUpdted := new(int64)
+
+		err = rows.Scan(
+			&post.ID,
+			&post.Title,
+			status,
+			&post.Body,
+			slug,
+			dateCreated,
+			dateUpdted,
+		)
+		if err != nil {
+			return []news.News{}, errors.Wrap(err, "scan a news item")
+		}
+
+		postIds = append(postIds, post.ID)
+
+		newsResults = append(newsResults, news.News{
+			Post:   post,
+			Status: *status,
+			Slug:   *slug,
+			DateCreated: *dateCreated,
+			DateUpdated: *dateUpdted,
+		})
+	}
+
+	if rows.Err() != nil {
+		return []news.News{}, errors.Wrap(err, "failed get items during iteration")
+	}
+
+	tagIdBucket, err := s.getAllNewsTagsIds(ctx, postIds)
+	if err != nil {
+		return []news.News{}, errors.Wrap(err, "could not get tag ids")
+	}
+
+	// Reconstruct news with addition TagsID property.
+	for i, elem := range newsResults {
+		newsResults[i] = news.News{
+			Post:   elem.Post,
+			Status: elem.Status,
+			Slug:   elem.Slug,
+			TagsID: tagIdBucket[elem.Post.ID],
+			DateCreated: elem.DateCreated,
+			DateUpdated: elem.DateUpdated,
+		}
+	}
+
+	return newsResults, nil
+}
+
+func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID, cursor int64, limit int) ([]news.News, error) {
+	ctx, span := tracer.Start(ctx, "news.db.GetAllByTopic")
+	defer span.End()
+
 	newsIDs, err := s.getAllNewsIds(ctx, topic)
 	if err != nil {
 		return []news.News{}, errors.Wrap(err, "could not get news ids")
@@ -265,9 +420,21 @@ func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News,
 	newsIdMark := sqlbuilder.List(newsIdsStr)
 	builder := sqlbuilder.NewSelectBuilder()
 
-	builder.Select("id", "title", "status", "body", "slug")
+	builder.Select("id", "title", "status", "body", "slug","date_created", "date_updated",)
 	builder.From("news")
 	builder.Where(builder.In("id", newsIdMark))
+	if cursor != 0 {
+		builder.Where(builder.LessThan("date_created", cursor))
+	}
+
+	builder.OrderBy("date_created").Desc()
+
+	if limit == 0 {
+		limit = 2
+	}
+
+	builder.Limit(limit)
+
 	newsQuery, newsArgs := builder.Build()
 
 	newsRows, err := s.conn.QueryContext(ctx, newsQuery, newsArgs...)
@@ -284,63 +451,8 @@ func (s Store) GetAllByTopic(ctx context.Context, topic uuid.UUID) ([]news.News,
 		post := bareknews.Post{}
 		slug := new(bareknews.Slug)
 		status := new(bareknews.Status)
-		err = newsRows.Scan(&post.ID, &post.Title, status, &post.Body, slug)
-		if err != nil {
-			return []news.News{}, errors.Wrap(err, "scan a news item")
-		}
-
-		postIds = append(postIds, post.ID)
-
-		newsResult = append(newsResult, news.News{
-			Post:   post,
-			Status: *status,
-			Slug:   *slug,
-		})
-	}
-
-	if newsRows.Err() != nil {
-		return []news.News{}, errors.Wrap(err, "failed get items during iteration")
-	}
-
-	tagIdsBucket, err := s.getAllNewsTagsIds(ctx, postIds)
-	if err != nil {
-		return []news.News{}, errors.Wrap(err, "could not get tag ids in bucket")
-	}
-
-	for i, elem := range newsResult {
-		newsResult[i] = news.News{
-			Post:   elem.Post,
-			Status: elem.Status,
-			Slug:   elem.Slug,
-			TagsID: tagIdsBucket[elem.Post.ID],
-		}
-	}
-
-	return newsResult, nil
-}
-
-func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]news.News, error) {
-	builder := sqlbuilder.NewSelectBuilder()
-
-	builder.Select("id", "title", "status", "body", "slug")
-	builder.From("news")
-	builder.Where(builder.Equal("status", status))
-	newsQuery, newsArgs := builder.Build()
-
-	newsRows, err := s.conn.QueryContext(ctx, newsQuery, newsArgs...)
-	if err != nil {
-		return []news.News{}, errors.Wrap(err, "exec the query")
-	}
-
-	defer newsRows.Close()
-
-	newsResult := make([]news.News, 0)
-	postIds := make([]uuid.UUID, 0)
-
-	for newsRows.Next() {
-		post := bareknews.Post{}
-		slug := new(bareknews.Slug)
-		status := new(bareknews.Status)
+		dateCreated := new(int64)
+		dateUpdted := new(int64)
 
 		err = newsRows.Scan(
 			&post.ID,
@@ -348,6 +460,8 @@ func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]n
 			status,
 			&post.Body,
 			slug,
+			dateCreated,
+			dateUpdted,
 		)
 		if err != nil {
 			return []news.News{}, errors.Wrap(err, "scan a news item")
@@ -359,6 +473,8 @@ func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]n
 			Post:   post,
 			Status: *status,
 			Slug:   *slug,
+			DateCreated: *dateCreated,
+			DateUpdated: *dateUpdted,
 		})
 	}
 
@@ -371,12 +487,103 @@ func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]n
 		return []news.News{}, errors.Wrap(err, "could not get tag ids in bucket")
 	}
 
+	// Reconstruct news with addition TagsID property.
 	for i, elem := range newsResult {
 		newsResult[i] = news.News{
 			Post:   elem.Post,
 			Status: elem.Status,
 			Slug:   elem.Slug,
 			TagsID: tagIdsBucket[elem.Post.ID],
+			DateCreated: elem.DateCreated,
+			DateUpdated: elem.DateUpdated,
+		}
+	}
+
+	return newsResult, nil
+}
+
+func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status, cursor int64, limit int) ([]news.News, error) {
+	ctx, span := tracer.Start(ctx, "news.db.GetAllByStatus")
+	defer span.End()
+
+	builder := sqlbuilder.NewSelectBuilder()
+
+	builder.Select("id", "title", "status", "body", "slug", "date_created", "date_updated")
+	builder.From("news")
+	builder.Where(builder.Equal("status", status))
+	if cursor != 0 {
+		builder.Where(builder.LessThan("date_created", cursor))
+	}
+
+	builder.OrderBy("date_created").Desc()
+
+	if limit == 0 {
+		limit = 2
+	}
+
+	builder.Limit(limit)
+
+	newsQuery, newsArgs := builder.Build()
+
+	newsRows, err := s.conn.QueryContext(ctx, newsQuery, newsArgs...)
+	if err != nil {
+		return []news.News{}, errors.Wrap(err, "exec the query")
+	}
+
+	defer newsRows.Close()
+
+	newsResult := make([]news.News, 0)
+	postIds := make([]uuid.UUID, 0)
+
+	for newsRows.Next() {
+		post := bareknews.Post{}
+		slug := new(bareknews.Slug)
+		status := new(bareknews.Status)
+		dateCreated := new(int64)
+		dateUpdted := new(int64)
+
+		err = newsRows.Scan(
+			&post.ID,
+			&post.Title,
+			status,
+			&post.Body,
+			slug,
+			dateCreated,
+			dateUpdted,
+		)
+		if err != nil {
+			return []news.News{}, errors.Wrap(err, "scan a news item")
+		}
+
+		postIds = append(postIds, post.ID)
+
+		newsResult = append(newsResult, news.News{
+			Post:   post,
+			Status: *status,
+			Slug:   *slug,
+			DateCreated: *dateCreated,
+			DateUpdated: *dateUpdted,
+		})
+	}
+
+	if newsRows.Err() != nil {
+		return []news.News{}, errors.Wrap(err, "failed get items during iteration")
+	}
+
+	tagIdsBucket, err := s.getAllNewsTagsIds(ctx, postIds)
+	if err != nil {
+		return []news.News{}, errors.Wrap(err, "could not get tag ids in bucket")
+	}
+
+	// Reconstruct news with addition TagsID property.
+	for i, elem := range newsResult {
+		newsResult[i] = news.News{
+			Post:   elem.Post,
+			Status: elem.Status,
+			Slug:   elem.Slug,
+			TagsID: tagIdsBucket[elem.Post.ID],
+			DateCreated: elem.DateCreated,
+			DateUpdated: elem.DateUpdated,
 		}
 	}
 
@@ -384,6 +591,9 @@ func (s Store) GetAllByStatus(ctx context.Context, status bareknews.Status) ([]n
 }
 
 func (s Store) getAllNewsIds(ctx context.Context, tagsID uuid.UUID) ([]uuid.UUID, error) {
+	ctx, span := tracer.Start(ctx, "news.db.getAllNewsIds")
+	defer span.End()
+
 	builder := sqlbuilder.NewSelectBuilder()
 	builder.Distinct()
 	builder.Select("newsID")
@@ -416,7 +626,10 @@ func (s Store) getAllNewsIds(ctx context.Context, tagsID uuid.UUID) ([]uuid.UUID
 	return newsIDs, nil
 }
 
-func (s Store) insertNewsTagsRelation(tx *sql.Tx, nws news.News) error {
+func (s Store) insertNewsTagsRelation(ctx context.Context, tx *sql.Tx, nws news.News) error {
+	_, span := tracer.Start(ctx, "news.db.insertNewsTagsRelation")
+	defer span.End()
+
 	// to avoid incomplete input error
 	if len(nws.TagsID) == 0 {
 		return nil
@@ -445,7 +658,10 @@ func (s Store) insertNewsTagsRelation(tx *sql.Tx, nws news.News) error {
 	return nil
 }
 
-func (s Store) deleteNewsTagsRelation(tx *sql.Tx, id uuid.UUID) error {
+func (s Store) deleteNewsTagsRelation(ctx context.Context, tx *sql.Tx, id uuid.UUID) error {
+	_, span := tracer.Start(ctx, "news.db.deleteNewsTagsRelation")
+	defer span.End()
+
 	builderDel := sqlbuilder.NewDeleteBuilder()
 
 	builderDel.DeleteFrom("news_tags")
@@ -461,6 +677,9 @@ func (s Store) deleteNewsTagsRelation(tx *sql.Tx, id uuid.UUID) error {
 }
 
 func (s Store) getAllNewsTagsIds(ctx context.Context, newsIds []uuid.UUID) (map[uuid.UUID][]uuid.UUID, error) {
+	_, span := tracer.Start(ctx, "news.db.getAllNewsTagsIds")
+	defer span.End()
+	
 	idstr := make([]string, 0)
 
 	for _, elem := range newsIds {
@@ -493,11 +712,7 @@ func (s Store) getAllNewsTagsIds(ctx context.Context, newsIds []uuid.UUID) (map[
 			return make(map[uuid.UUID][]uuid.UUID), errors.Wrap(err, "scan news and tag id")
 		}
 
-		if elem, ok := itemBatch[newsId]; ok {
-			elem = append(elem, tagId)
-		} else {
-			itemBatch[newsId] = append(itemBatch[newsId], tagId)
-		}
+		itemBatch[newsId] = append(itemBatch[newsId], tagId)
 	}
 
 	if rows.Err() != nil {
@@ -508,6 +723,9 @@ func (s Store) getAllNewsTagsIds(ctx context.Context, newsIds []uuid.UUID) (map[
 }
 
 func (s Store) getAllTagIds(ctx context.Context, newsId uuid.UUID) ([]uuid.UUID, error) {
+	_, span := tracer.Start(ctx, "news.db.getAllTagIds")
+	defer span.End()
+
 	builder := sqlbuilder.NewSelectBuilder()
 
 	builder.Distinct()

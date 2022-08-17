@@ -119,7 +119,7 @@ func TestUpdate(t *testing.T) {
 		svc := tags.CreateSvc(store)
 		_, err := svc.Update(context.TODO(), uuid.New(), "tag 2")
 		is := is.New(t)
-		is.Equal(err, bareknews.ErrDataNotFound)
+		is.Equal(err, sql.ErrNoRows)
 		is.Equal(len(store.UpdateCalls()), 0)
 	})
 }

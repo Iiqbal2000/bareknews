@@ -1,15 +1,17 @@
 package tags
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/pkg/web"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"golang.org/x/net/context"
 )
 
 type handler struct {
@@ -37,39 +39,28 @@ func CreateHandler(svc Service, log *zap.SugaredLogger) handler {
 // @Failure      404  {object}  web.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /tags [post]
-func (t handler) Create(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
+func (t handler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	payload := InputTag{}
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, bareknews.ErrInvalidJSON)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return bareknews.ErrInvalidJSON
 	}
 
 	tagRes, err := t.service.Create(ctx, payload.Name)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, err)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
+		if errors.Is(err, bareknews.ErrDataAlreadyExist) {
+			return web.NewRequestError(bareknews.ErrDataAlreadyExist, http.StatusConflict)
 		}
-		return
+		return err
 	}
 
-	payloadRes := web.RespBody{
+	payloadRes := web.GeneralResponse{
 		Message: "Successfully creating a tag",
 		Data:    tagRes,
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		t.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusCreated)
 }
 
 // GetTagById godoc
@@ -83,38 +74,28 @@ func (t handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  web.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /tags/{id} [get]
-func (t handler) GetById(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (t handler) GetById(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	rawId := chi.URLParam(r, "tagId")
+
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, bareknews.ErrDataNotFound)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 	}
 
 	tg, err := t.service.GetById(ctx, id)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, err)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
+		if errors.Is(err, sql.ErrNoRows) {
+			return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 		}
-		return
+		return err
 	}
 
-	payloadRes := web.RespBody{
+	payloadRes := web.GeneralResponse{
 		Message: "Successfully getting a tag",
 		Data:    tg,
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	err = json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		t.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusOK)
 }
 
 // UpdateTags godoc
@@ -130,49 +111,35 @@ func (t handler) GetById(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  web.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /tags/{id} [put]
-func (t handler) Update(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (t handler) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	rawId := chi.URLParam(r, "tagId")
+
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, bareknews.ErrDataNotFound)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 	}
 
 	payload := InputTag{}
 
 	err = json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, bareknews.ErrInvalidJSON)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return bareknews.ErrInvalidJSON
 	}
 
 	tg, err := t.service.Update(ctx, id, payload.Name)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, err)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
+		if errors.Is(err, sql.ErrNoRows) {
+			return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 		}
-		return
+		return err
 	}
 
-	payloadRes := web.RespBody{
+	payloadRes := web.GeneralResponse{
 		Message: "Successfully updating a tag",
 		Data:    tg,
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	err = json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		t.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusOK)
 }
 
 // GetAllTags godoc
@@ -184,28 +151,18 @@ func (t handler) Update(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {object}  web.RespBody{data=[]tagging.Response} "Array of tag body"
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /tags [get]
-func (t handler) GetAll(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (t handler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	tgs, err := t.service.GetAll(ctx)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, err)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return err
 	}
 
-	payloadRes := web.RespBody{
+	payloadRes := web.GeneralResponse{
 		Message: "Successfully getting all tags",
 		Data:    tgs,
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	err = json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		t.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusOK)
 }
 
 // DeleteTags godoc
@@ -219,37 +176,26 @@ func (t handler) GetAll(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  web.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /tags/{id} [delete]
-func (t handler) Delete(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
+func (t handler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	rawId := chi.URLParam(r, "tagId")
+
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, bareknews.ErrDataNotFound)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 	}
 
 	err = t.service.Delete(ctx, id)
 	if err != nil {
-		err = web.WriteErrResponse(w, t.log, err)
-		if err != nil {
-			t.log.Error(errors.Wrap(err, "failed to write a response"))
+		if errors.Is(err, sql.ErrNoRows) {
+			return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 		}
-		return
+		return err
 	}
 
-	payloadRes := web.RespBody{
+	payloadRes := web.GeneralResponse{
 		Message: "Successfully deleting a tag",
 		Data:    struct{}{},
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	err = json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		t.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusOK)
 }

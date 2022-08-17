@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/Iiqbal2000/bareknews"
 	"github.com/Iiqbal2000/bareknews/news"
@@ -135,7 +136,7 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	tgId := uuid.New()
-	payload := news.Create("news title", "news body", "draft", []uuid.UUID{tgId})
+	payload := news.Create("news title", "news body", "draft", []uuid.UUID{tgId}, time.Now().Unix())
 
 	store := &news.RepositoryMock{
 		GetByIdFunc: func(ctx context.Context, id uuid.UUID) (*news.News, error) {
@@ -188,7 +189,7 @@ func TestDelete(t *testing.T) {
 		is := is.New(t)
 
 		svc := news.CreateSvc(store, tags.CreateSvc(&tags.RepositoryMock{}))
-		payload := news.Create("news title", "news body", "draft", []uuid.UUID{uuid.New()})
+		payload := news.Create("news title", "news body", "draft", []uuid.UUID{uuid.New()}, time.Now().Unix())
 		err := svc.Delete(context.TODO(), payload.Post.ID)
 		is.NoErr(err)
 
@@ -218,7 +219,7 @@ func TestDelete(t *testing.T) {
 
 func TestGetAllByStatus(t *testing.T) {
 	nwsStore := &news.RepositoryMock{
-		GetAllByStatusFunc: func(ctx context.Context, status bareknews.Status) ([]news.News, error) {
+		GetAllByStatusFunc: func(ctx context.Context, status bareknews.Status, cursor int64, limit int) ([]news.News, error) {
 			return nil, nil
 		},
 	}
@@ -227,15 +228,15 @@ func TestGetAllByStatus(t *testing.T) {
 	nwsSvc := news.CreateSvc(nwsStore, tags.CreateSvc(tgStore))
 
 	is := is.New(t)
-	_, err := nwsSvc.GetAllByStatus(context.TODO(), "draft")
+	_, err := nwsSvc.GetAllByStatus(context.TODO(), "draft", 0)
 	is.NoErr(err)
 
-	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publish")
+	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publish", 0)
 	is.NoErr(err)
 
-	_, err = nwsSvc.GetAllByStatus(context.TODO(), "")
+	_, err = nwsSvc.GetAllByStatus(context.TODO(), "", 0)
 	is.True(err != nil)
 
-	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publsjsja")
+	_, err = nwsSvc.GetAllByStatus(context.TODO(), "publsjsja", 0)
 	is.True(err != nil)
 }

@@ -10,10 +10,10 @@ import (
 //go:generate moq -out newsRepo_moq.go . Repository
 type Repository interface {
 	Save(context.Context, News) error
-	GetAll(context.Context) ([]News, error)
+	GetAll(ctx context.Context, cursor int64, limit int) ([]News, error)
 	GetById(context.Context, uuid.UUID) (*News, error)
-	GetAllByTopic(context.Context, uuid.UUID) ([]News, error)
-	GetAllByStatus(ctx context.Context, status bareknews.Status) ([]News, error)
+	GetAllByTopic(ctx context.Context, id uuid.UUID, cursor int64, limit int) ([]News, error)
+	GetAllByStatus(ctx context.Context, status bareknews.Status, cursor int64, limit int) ([]News, error)
 	Count(context.Context, uuid.UUID) (int, error)
 	Update(context.Context, News) error
 	Delete(context.Context, uuid.UUID) error

@@ -2,13 +2,14 @@ package tags
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"strings"
 
 	"github.com/Iiqbal2000/bareknews"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("github.com/Iiqbal2000/bareknews/tags")
 
 type TagsOut struct {
 	ID   uuid.UUID `json:"id"`
@@ -25,6 +26,9 @@ func CreateSvc(repo Repository) Service {
 }
 
 func (s Service) Create(ctx context.Context, tagName string) (TagsOut, error) {
+	ctx, span := tracer.Start(ctx, "tags.Create")
+	defer span.End()
+
 	tag := Create(strings.TrimSpace(tagName))
 
 	err := tag.Validate()
@@ -45,13 +49,12 @@ func (s Service) Create(ctx context.Context, tagName string) (TagsOut, error) {
 }
 
 func (s Service) Update(ctx context.Context, id uuid.UUID, newTagname string) (TagsOut, error) {
+	ctx, span := tracer.Start(ctx, "tags.Update")
+	defer span.End()
+
 	tag, err := s.store.GetById(ctx, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return TagsOut{}, bareknews.ErrDataNotFound
-		} else {
-			return TagsOut{}, err
-		}
+		return TagsOut{}, err
 	}
 
 	tag.ChangeName(strings.TrimSpace(newTagname))
@@ -74,13 +77,12 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, newTagname string) (T
 }
 
 func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := tracer.Start(ctx, "tags.Delete")
+	defer span.End()
+
 	_, err := s.store.Count(ctx, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return bareknews.ErrDataNotFound
-		} else {
-			return err
-		}
+		return err
 	}
 
 	err = s.store.Delete(ctx, id)
@@ -92,13 +94,12 @@ func (s Service) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s Service) GetById(ctx context.Context, id uuid.UUID) (TagsOut, error) {
+	ctx, span := tracer.Start(ctx, "tags.GetById")
+	defer span.End()
+
 	tg, err := s.store.GetById(ctx, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return TagsOut{}, bareknews.ErrDataNotFound
-		} else {
-			return TagsOut{}, err
-		}
+		return TagsOut{}, err
 	}
 
 	return TagsOut{
@@ -109,6 +110,9 @@ func (s Service) GetById(ctx context.Context, id uuid.UUID) (TagsOut, error) {
 }
 
 func (s Service) GetByIds(ctx context.Context, ids []uuid.UUID) ([]TagsOut, error) {
+	ctx, span := tracer.Start(ctx, "tags.GetByIds")
+	defer span.End()
+
 	tgs, err := s.store.GetByIds(ctx, ids)
 	if err != nil {
 		return []TagsOut{}, bareknews.ErrInternalServer
@@ -128,6 +132,9 @@ func (s Service) GetByIds(ctx context.Context, ids []uuid.UUID) ([]TagsOut, erro
 }
 
 func (s Service) GetAll(ctx context.Context) ([]TagsOut, error) {
+	ctx, span := tracer.Start(ctx, "tags.GetAll")
+	defer span.End()
+
 	tg, err := s.store.GetAll(ctx)
 	if err != nil {
 		return []TagsOut{}, err
@@ -147,6 +154,9 @@ func (s Service) GetAll(ctx context.Context) ([]TagsOut, error) {
 }
 
 func (s Service) GetByNames(ctx context.Context, names []string) []TagsOut {
+	ctx, span := tracer.Start(ctx, "tags.GetByNames")
+	defer span.End()
+
 	tg, err := s.store.GetByNames(ctx, names...)
 	if err != nil {
 		return []TagsOut{}
@@ -166,6 +176,9 @@ func (s Service) GetByNames(ctx context.Context, names []string) []TagsOut {
 }
 
 func (s Service) GetByName(ctx context.Context, name string) TagsOut {
+	ctx, span := tracer.Start(ctx, "tags.GetByName")
+	defer span.End()
+
 	tg, err := s.store.GetByName(ctx, name)
 	if err != nil {
 		return TagsOut{}

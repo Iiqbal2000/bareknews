@@ -2,83 +2,49 @@ package sqlite3
 
 import (
 	"database/sql"
+	"embed"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	"github.com/pressly/goose/v3"
+	"go.uber.org/zap"
 )
 
-const tagsquery = `CREATE TABLE IF NOT EXISTS tags(
-	ID VARCHAR (127) PRIMARY KEY UNIQUE,
-	name VARCHAR (127) NOT NULL UNIQUE,
-	slug VARCHAR (127) NOT NULL UNIQUE
-)`
-
-const newsQuery = `CREATE TABLE IF NOT EXISTS news(
-	ID CHAR (127) PRIMARY KEY UNIQUE,
-	title VARCHAR (127) NOT NULL UNIQUE,
-	slug VARCHAR (127) NOT NULL UNIQUE,
-	status VARCHAR (127) NOT NULL,
-	body TEXT NOT NULL
-)`
-
-const news_tagsquery = `CREATE TABLE IF NOT EXISTS news_tags(
-	newsID VARCHAR (127) NOT NULL,
-	tagsID VARCHAR (127) NOT NULL,
-	FOREIGN KEY(newsID) REFERENCES news(id) ON DELETE CASCADE,
-	FOREIGN KEY(tagsID) REFERENCES tags(id) ON DELETE CASCADE
-)`
+//go:embed schema/*.sql
+var embedMigrations embed.FS
 
 type Config struct {
-	URI string
+	URI            string
+	Log            *zap.SugaredLogger
+	DropTableFirst bool
 }
 
-func Run(c Config, dropTable bool) (*sql.DB, error) {
+func Run(c Config) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", c.URI)
 	if err != nil {
 		return nil, errors.Wrap(err, "failure when opening db connection")
 	}
 
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, errors.Wrap(err, "failure when starting transaction")
-	}
+	goose.SetDialect("sqlite3")
+	goose.SetBaseFS(embedMigrations)
 
-	defer tx.Rollback()
-
-	if dropTable {
-		_, err = tx.Exec("DROP TABLE IF EXISTS tags;")
-		if err != nil {
-			return nil, errors.Wrap(err, "failure when drop tags table")
-		}
-
-		_, err = tx.Exec("DROP TABLE IF EXISTS news;")
-		if err != nil {
-			return nil, errors.Wrap(err, "failure when drop news table")
-		}
-
-		_, err = tx.Exec("DROP TABLE IF EXISTS news_tags;")
-		if err != nil {
-			return nil, errors.Wrap(err, "failure when drop news_tags table")
+	if c.DropTableFirst {
+		if err := goose.Reset(db, "schema"); err != nil {
+			return nil, errors.Wrap(err, "could not perform resetting the migration")
 		}
 	}
 
-	_, err = tx.Exec(tagsquery)
-	if err != nil {
-		return nil, errors.Wrap(err, "failure when creating tags table")
+	if err := goose.Up(db, "schema"); err != nil {
+		return nil, errors.Wrap(err, "could not perform schema migration")
 	}
 
-	_, err = tx.Exec(newsQuery)
-	if err != nil {
-		return nil, errors.Wrap(err, "failure when creating news table")
+	if err := goose.Version(db, "schema"); err != nil {
+		return nil, errors.Wrap(err, "could not prints the current version of the db migration")
 	}
 
-	_, err = tx.Exec(news_tagsquery)
-	if err != nil {
-		return nil, errors.Wrap(err, "failure when creating news_tags table")
+	if c.Log != nil {
+		c.Log.Infow("startup", "status", "successfully migrate the db schema")
 	}
 
-	if err = tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "faiure when commiting the queries")
-	}
 	return db, nil
 }

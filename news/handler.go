@@ -1,8 +1,11 @@
 package news
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Iiqbal2000/bareknews"
@@ -34,39 +37,28 @@ func CreateHandler(svc Service, log *zap.SugaredLogger) handler {
 // @Failure      404  {object}  web.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /news [post]
-func (n handler) Create(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
+func (n handler) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	payloadIn := NewsIn{}
 
 	err := json.NewDecoder(r.Body).Decode(&payloadIn)
 	if err != nil {
-		err = web.WriteErrResponse(w, n.log, bareknews.ErrInvalidJSON)
-		if err != nil {
-			n.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return bareknews.ErrInvalidJSON
 	}
 
 	nws, err := n.service.Create(ctx, payloadIn)
 	if err != nil {
-		err = web.WriteErrResponse(w, n.log, err)
-		if err != nil {
-			n.log.Error(errors.Wrap(err, "failed to write a response"))
+		if errors.Is(err, bareknews.ErrDataAlreadyExist) {
+			return web.NewRequestError(bareknews.ErrDataAlreadyExist, http.StatusConflict)
 		}
-		return
+		return err
 	}
 
-	payloadRes := web.RespBody{
+	payloadRes := web.GeneralResponse{
 		Message: "Successfully creating a news",
 		Data:    nws,
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		n.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusCreated)
 }
 
 // GetNewsById godoc
@@ -80,37 +72,28 @@ func (n handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  web.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /news/{id} [get]
-func (n handler) GetById(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (n handler) GetById(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	rawID := chi.URLParam(r, "newsId")
+
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		err = web.WriteErrResponse(w, n.log, bareknews.ErrDataNotFound)
-		if err != nil {
-			n.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 	}
 
 	nws, err := n.service.GetById(ctx, id)
 	if err != nil {
-		err = web.WriteErrResponse(w, n.log, err)
-		if err != nil {
-			n.log.Error(errors.Wrap(err, "failed to write a response"))
+		if errors.Is(err, sql.ErrNoRows) {
+			return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 		}
-		return
+		return err
 	}
 
-	payloadRes := web.RespBody{
+	payloadRes := web.GeneralResponse{
 		Message: "Successfully getting a news",
 		Data:    nws,
 	}
 
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		n.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusOK)
 }
 
 // UpdateNews godoc
@@ -126,48 +109,34 @@ func (n handler) GetById(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  web.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /news/{id} [put]
-func (n handler) Update(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (n handler) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		err = web.WriteErrResponse(w, n.log, bareknews.ErrDataNotFound)
-		if err != nil {
-			n.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 	}
 
 	payloadIn := NewsIn{}
 
 	err = json.NewDecoder(r.Body).Decode(&payloadIn)
 	if err != nil {
-		err = web.WriteErrResponse(w, n.log, bareknews.ErrInvalidJSON)
-		if err != nil {
-			n.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return bareknews.ErrInvalidJSON
 	}
 
 	nws, err := n.service.Update(ctx, id, payloadIn)
 	if err != nil {
-		err = web.WriteErrResponse(w, n.log, err)
-		if err != nil {
-			n.log.Error(errors.Wrap(err, "failed to write a response"))
+		if errors.Is(err, sql.ErrNoRows) {
+			return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 		}
-		return
+		return err
 	}
 
-	payloadRes := web.RespBody{
+	payloadRes := web.GeneralResponse{
 		Message: "Successfully updating a news",
 		Data:    nws,
 	}
 
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		n.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusOK)
 }
 
 // DeleteNews godoc
@@ -181,25 +150,20 @@ func (n handler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  web.ErrRespBody{error=object{message=string}}
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /news/{id} [delete]
-func (n handler) Delete(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (n handler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	rawID := chi.URLParam(r, "newsId")
+
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		err = web.WriteErrResponse(w, n.log, bareknews.ErrDataNotFound)
-		if err != nil {
-			n.log.Error(errors.Wrap(err, "failed to write a response"))
-		}
-		return
+		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 	}
 
 	err = n.service.Delete(ctx, id)
 	if err != nil {
-		err = web.WriteErrResponse(w, n.log, err)
-		if err != nil {
-			n.log.Error(errors.Wrap(err, "failed to write a response"))
+		if errors.Is(err, sql.ErrNoRows) {
+			return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
 		}
-		return
+		return err
 	}
 
 	payloadRes := map[string]interface{}{
@@ -207,11 +171,7 @@ func (n handler) Delete(w http.ResponseWriter, r *http.Request) {
 		"data":    struct{}{},
 	}
 
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		n.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusOK)
 }
 
 // GetAllNews godoc
@@ -225,24 +185,28 @@ func (n handler) Delete(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {object}  web.RespBody{data=[]posting.Response} "Array of news body"
 // @Failure      500  {object}  web.ErrRespBody{error=object{message=string}}
 // @Router       /news [get]
-func (n handler) GetAll(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
+func (n handler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	q := r.URL.Query()
 	topic := strings.TrimSpace(q.Get("topic"))
 	status := strings.TrimSpace(q.Get("status"))
+	rawCursor := strings.TrimSpace(q.Get("cursor"))
+
+	if rawCursor == "" {
+		rawCursor = "0"
+	}
+
+	cursor, err := strconv.ParseInt(rawCursor, 10, 64)
+	if err != nil {
+		return web.NewRequestError(errors.New("failed to convert the cursor"), http.StatusBadRequest)
+	}
 
 	newsRes := make([]NewsOut, 0)
 
 	switch {
 	case topic != "" && status != "":
-		nws, err := n.service.GetAllByTopic(ctx, topic)
+		nws, err := n.service.GetAllByTopic(ctx, topic, cursor)
 		if err != nil {
-			err = web.WriteErrResponse(w, n.log, err)
-			if err != nil {
-				n.log.Error(errors.Wrap(err, "failed to write a response"))
-			}
-			return
+			return err
 		}
 
 		for _, n := range nws {
@@ -251,48 +215,32 @@ func (n handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case topic == "" && status != "":
-		nws, err := n.service.GetAllByStatus(ctx, status)
+		nws, err := n.service.GetAllByStatus(ctx, status, cursor)
 		if err != nil {
-			err = web.WriteErrResponse(w, n.log, err)
-			if err != nil {
-				n.log.Error(errors.Wrap(err, "failed to write a response"))
-			}
-			return
+			return err
 		}
 
 		newsRes = append(newsRes, nws...)
 	case topic != "" && status == "":
-		nws, err := n.service.GetAllByTopic(ctx, topic)
+		nws, err := n.service.GetAllByTopic(ctx, topic, cursor)
 		if err != nil {
-			err = web.WriteErrResponse(w, n.log, err)
-			if err != nil {
-				n.log.Error(errors.Wrap(err, "failed to write a response"))
-			}
-			return
+			return err
 		}
 
 		newsRes = append(newsRes, nws...)
 	default:
-		nws, err := n.service.GetAll(ctx)
+		nws, err := n.service.GetAll(ctx, cursor)
 		if err != nil {
-			err = web.WriteErrResponse(w, n.log, err)
-			if err != nil {
-				n.log.Error(errors.Wrap(err, "failed to write a response"))
-			}
-			return
+			return err
 		}
 
 		newsRes = append(newsRes, nws...)
 	}
 
-	payloadRes := web.RespBody{
+	payloadRes := web.GeneralResponse{
 		Message: "Successfuly getting all news",
 		Data:    newsRes,
 	}
 
-	w.WriteHeader(http.StatusOK)
-	err := json.NewEncoder(w).Encode(payloadRes)
-	if err != nil {
-		n.log.Error(errors.Wrap(err, "failed to write a response"))
-	}
+	return web.Respond(w, payloadRes, http.StatusOK)
 }
