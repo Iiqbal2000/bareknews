@@ -10,13 +10,9 @@ import (
 	"time"
 
 	_ "github.com/Iiqbal2000/bareknews/docs"
-	"github.com/Iiqbal2000/bareknews/news"
 	"github.com/Iiqbal2000/bareknews/pkg/logger"
 	"github.com/Iiqbal2000/bareknews/pkg/sqlite3"
-	"github.com/Iiqbal2000/bareknews/pkg/web"
-	"github.com/Iiqbal2000/bareknews/tags"
-	newsdb "github.com/Iiqbal2000/bareknews/news/db"
-	tagsdb "github.com/Iiqbal2000/bareknews/tags/db"
+	v1 "github.com/Iiqbal2000/bareknews/pkg/v1"
 	"github.com/ardanlabs/conf/v3"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -107,9 +103,9 @@ func run(log *zap.SugaredLogger) error {
 
 	// Starting a database support.
 	dbConn, err := sqlite3.Run(sqlite3.Config{
-		URI: cfg.DB,
+		URI:            cfg.DB,
 		DropTableFirst: true,
-		Log: log,
+		Log:            log,
 	})
 
 	if err != nil {
@@ -133,38 +129,13 @@ func run(log *zap.SugaredLogger) error {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
-	app := web.NewApp(
-		shutdown,
-		web.ContentTypeJSON(),
-		web.CORS(),
-		web.Errors(log),
-		web.Panics(),
-	)
+	muxConfig := v1.APIMuxConfig{
+		Shutdown: shutdown,
+		Log:      log,
+		DB:       dbConn,
+	}
 
-	// app.Mux.Get("/swagger/*", httpSwagger.Handler(
-	// 	httpSwagger.URL("http://localhost:3333/swagger/doc.json"),
-	// ))
-
-	newsDB := newsdb.CreateStore(dbConn)
-	tagsDB := tagsdb.CreateStore(dbConn)
-
-	tagsSvc := tags.CreateSvc(tagsDB)
-	newsSvc := news.CreateSvc(newsDB, tagsSvc)
-
-	tagsHandler := tags.CreateHandler(tagsSvc, log)
-	newsHandler := news.CreateHandler(newsSvc, log)
-
-	app.Handle("POST", "/api/news", newsHandler.Create)
-	app.Handle("GET", "/api/news", newsHandler.GetAll)
-	app.Handle("GET", "/api/news/{newsId}", newsHandler.GetById)
-	app.Handle("PUT", "/api/news/{newsId}", newsHandler.Update)
-	app.Handle("DELETE", "/api/news/{newsId}", newsHandler.Delete)
-
-	app.Handle("POST", "/api/tags", tagsHandler.Create)
-	app.Handle("GET", "/api/tags", tagsHandler.GetAll)
-	app.Handle("GET", "/api/tags/{tagId}", tagsHandler.GetById)
-	app.Handle("PUT", "/api/tags/{tagId}", tagsHandler.Update)
-	app.Handle("DELETE", "/api/tags/{tagId}", tagsHandler.Delete)
+	mux := v1.APIMux(muxConfig)
 
 	// Construct a server to service the requests against the mux.
 	api := http.Server{
