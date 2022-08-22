@@ -13,12 +13,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// APIMuxConfig contains some dependencies needed to run the web API.
 type APIMuxConfig struct {
 	Shutdown chan os.Signal
 	Log      *zap.SugaredLogger
 	DB       *sql.DB
 }
 
+// APIMux will create an APP with some middlewares and initialize all components
+// like DB, services, and handlers so we can set up routes of endpoints.
 func APIMux(config APIMuxConfig) http.Handler {
 	app := web.NewApp(
 		config.Shutdown,
