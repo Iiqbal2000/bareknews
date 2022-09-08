@@ -14,6 +14,14 @@ const (
 	Draft   Status = "draft"
 )
 
+func SetStatus(status string) Status {
+	if s := strings.TrimSpace(status); s == "" {
+		return Draft
+	}
+
+	return Status(status)
+}
+
 // Validate performs validating to the status.
 func (s Status) Validate() error {
 	status := strings.ToLower(s.String())

@@ -36,7 +36,15 @@ func (s Store) Save(ctx context.Context, n news.News) error {
 
 	builder := sqlbuilder.NewInsertBuilder()
 	builder.InsertInto("news")
-	builder.Cols("id", "title", "slug", "status", "body", "date_created", "date_updated")
+	builder.Cols(
+		"id",
+		"title",
+		"slug",
+		"status",
+		"body",
+		"date_created",
+		"date_updated",
+	)
 	builder.Values(
 		n.Post.ID,
 		n.Post.Title,
@@ -48,7 +56,7 @@ func (s Store) Save(ctx context.Context, n news.News) error {
 	)
 	query, args := builder.Build()
 
-	_, err = tx.Exec(query, args...)
+	_, err = tx.ExecContext(ctx, query, args...)
 	if err != nil {
 		if possibleErr, ok := err.(sqlite3.Error); ok {
 			if possibleErr.ExtendedCode == sqlite3.ErrConstraintUnique {

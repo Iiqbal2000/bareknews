@@ -136,7 +136,13 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	tgId := uuid.New()
-	payload := news.Create("news title", "news body", "draft", []uuid.UUID{tgId}, time.Now().Unix())
+	payload := news.Create(
+		"news title",
+		"news body",
+		"draft",
+		[]uuid.UUID{tgId},
+		time.Now().Unix(),
+	)
 
 	store := &news.RepositoryMock{
 		GetByIdFunc: func(ctx context.Context, id uuid.UUID) (*news.News, error) {
@@ -160,6 +166,9 @@ func TestUpdate(t *testing.T) {
 
 	newPayload := news.NewsIn{
 		Title: "news title update",
+		Body: "news body",
+		Status: "draft",
+		Tags: []string{tgId.String()},
 	}
 
 	svc := news.CreateSvc(store, tags.CreateSvc(tgStore))
@@ -169,10 +178,12 @@ func TestUpdate(t *testing.T) {
 	is.True(resp.Body != "")
 	is.True(resp.Slug != "")
 	is.True(resp.Status != "")
+	is.True(resp.DateCreated != 0)
+	is.True(resp.DateUpdated != 0)
 	is.Equal(len(resp.Tags), 1)
 	is.Equal(len(store.GetByIdCalls()), 1)
 	is.Equal(len(store.UpdateCalls()), 1)
-	is.Equal(len(tgStore.GetByNamesCalls()), 0)
+	is.Equal(len(tgStore.GetByNamesCalls()), 1)
 }
 
 func TestDelete(t *testing.T) {

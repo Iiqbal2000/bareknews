@@ -27,7 +27,7 @@ func SetMiddlewares(mw []Middleware, handler Handler) Handler {
 func ContentTypeJSON() Middleware {
 	m := func(next Handler) Handler {
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-			w.Header().Set("content-type", "application/json;charset=utf8")
+			w.Header().Set("content-type", "application/json;charset=utf-8")
 			return next(ctx, w, r)
 		}
 		return h
@@ -85,6 +85,8 @@ func Errors(log *zap.SugaredLogger) Middleware {
 						Error: reqErr.Error(),
 					}
 				default:
+					log.Errorw(fmt.Sprint(err.Error()))
+					
 					status = http.StatusInternalServerError
 					errResp = ErrorResponse{
 						Error: bareknews.ErrInternalServer.Error(),

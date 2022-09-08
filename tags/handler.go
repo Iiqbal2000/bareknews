@@ -14,6 +14,14 @@ import (
 	"golang.org/x/net/context"
 )
 
+const (
+	MsgForCreatedTags    = "Successfully creating a tag"
+	MsgForGettingAllTags = "Successfully getting all tags"
+	MsgForGettingTag     = "Successfully getting a tag"
+	MsgForUpdatingTag    = "Successfully updating a tag"
+	MsgForDeletingTag    = "Successfully deleting a tag"
+)
+
 type handler struct {
 	service Service
 	log     *zap.SugaredLogger
@@ -56,7 +64,7 @@ func (t handler) Create(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	payloadRes := web.GeneralResponse{
-		Message: "Successfully creating a tag",
+		Message: MsgForCreatedTags,
 		Data:    tagRes,
 	}
 
@@ -79,7 +87,7 @@ func (t handler) GetById(ctx context.Context, w http.ResponseWriter, r *http.Req
 
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
+		return bareknews.ErrInvalidUUID
 	}
 
 	tg, err := t.service.GetById(ctx, id)
@@ -91,7 +99,7 @@ func (t handler) GetById(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	payloadRes := web.GeneralResponse{
-		Message: "Successfully getting a tag",
+		Message: MsgForGettingTag,
 		Data:    tg,
 	}
 
@@ -116,7 +124,7 @@ func (t handler) Update(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
+		return bareknews.ErrInvalidUUID
 	}
 
 	payload := InputTag{}
@@ -135,7 +143,7 @@ func (t handler) Update(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	payloadRes := web.GeneralResponse{
-		Message: "Successfully updating a tag",
+		Message: MsgForUpdatingTag,
 		Data:    tg,
 	}
 
@@ -158,7 +166,7 @@ func (t handler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	payloadRes := web.GeneralResponse{
-		Message: "Successfully getting all tags",
+		Message: MsgForGettingAllTags,
 		Data:    tgs,
 	}
 
@@ -181,7 +189,7 @@ func (t handler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	id, err := uuid.Parse(rawId)
 	if err != nil {
-		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
+		return bareknews.ErrInvalidUUID
 	}
 
 	err = t.service.Delete(ctx, id)
@@ -193,7 +201,7 @@ func (t handler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	payloadRes := web.GeneralResponse{
-		Message: "Successfully deleting a tag",
+		Message: MsgForDeletingTag,
 		Data:    struct{}{},
 	}
 

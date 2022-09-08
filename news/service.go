@@ -2,7 +2,6 @@ package news
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/Iiqbal2000/bareknews"
@@ -65,7 +64,7 @@ func (s Service) Create(ctx context.Context, input NewsIn) (NewsOut, error) {
 		tgId = append(tgId, t.ID)
 	}
 
-	news := Create(input.Title, input.Body, bareknews.Status(input.Status), tgId, time.Now().Unix())
+	news := Create(input.Title, input.Body, bareknews.SetStatus(input.Status), tgId, time.Now().Unix())
 
 	err := news.Validate()
 	if err != nil {
@@ -84,35 +83,30 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, input NewsIn) (NewsOu
 	ctx, span := tracer.Start(ctx, "news.Update")
 	defer span.End()
 
+	// TODO: this may be better if the name of the function is changed to "getDetailNewsBy".
 	news, err := s.store.GetById(ctx, id)
 	if err != nil {
 		return NewsOut{}, err
 	}
 
-	if input.Title != "" && strings.TrimSpace(input.Title) != "" {
-		news.ChangeTitle(input.Title)
+	tg := s.tagging.GetByNames(ctx, input.Tags)
+	tgId := make([]uuid.UUID, 0)
+
+	for _, t := range tg {
+		tgId = append(tgId, t.ID)
 	}
 
-	if input.Body != "" && strings.TrimSpace(input.Body) != "" {
-		news.ChangeBody(input.Body)
-	}
+	dateUpdated := time.Now().Unix()
 
-	if input.Status != "" && strings.TrimSpace(input.Status) != "" {
-		news.ChangeStatus(bareknews.Status(input.Status))
-	}
-
-	news.ChangeDateUpdated(time.Now().Unix())
-
-	if len(input.Tags) > 0 {
-		tg := s.tagging.GetByNames(ctx, input.Tags)
-		tgId := make([]uuid.UUID, 0)
-
-		for _, t := range tg {
-			tgId = append(tgId, t.ID)
-		}
-
-		news.ChangeTags(tgId)
-	}
+	news = Update(
+		news.Post.ID,
+		input.Title,
+		input.Body,
+		bareknews.SetStatus(input.Status),
+		tgId,
+		news.DateCreated,
+		dateUpdated,
+	)
 
 	err = news.Validate()
 	if err != nil {
@@ -124,7 +118,8 @@ func (s Service) Update(ctx context.Context, id uuid.UUID, input NewsIn) (NewsOu
 		return NewsOut{}, errors.Wrap(err, "update a news item")
 	}
 
-	tg, err := s.tagging.GetByIds(ctx, news.TagsID)
+	// TODO: this may be better if the name of the function is changed to "getDetailTagsBy".
+	tg, err = s.tagging.GetByIds(ctx, tgId)
 	if err != nil {
 		return NewsOut{}, errors.Wrap(err, "get tags by ids")
 	}

@@ -16,6 +16,14 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	MsgForCreatedNews    = "Successfully creating a news"
+	MsgForUpdatedNews    = "Successfully updating a news"
+	MsgForDeletedNews    = "Successfully deleting a news"
+	MsgForGettingAllNews = "Successfuly getting all news"
+	MsgForGettingNews    = "Successfully getting a news"
+)
+
 type handler struct {
 	service Service
 	log     *zap.SugaredLogger
@@ -54,7 +62,7 @@ func (n handler) Create(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	payloadRes := web.GeneralResponse{
-		Message: "Successfully creating a news",
+		Message: MsgForCreatedNews,
 		Data:    nws,
 	}
 
@@ -77,7 +85,7 @@ func (n handler) GetById(ctx context.Context, w http.ResponseWriter, r *http.Req
 
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
+		return bareknews.ErrInvalidUUID
 	}
 
 	nws, err := n.service.GetById(ctx, id)
@@ -89,7 +97,7 @@ func (n handler) GetById(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	payloadRes := web.GeneralResponse{
-		Message: "Successfully getting a news",
+		Message: MsgForGettingNews,
 		Data:    nws,
 	}
 
@@ -113,7 +121,7 @@ func (n handler) Update(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	rawID := chi.URLParam(r, "newsId")
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
+		return bareknews.ErrInvalidUUID
 	}
 
 	payloadIn := NewsIn{}
@@ -132,7 +140,7 @@ func (n handler) Update(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	payloadRes := web.GeneralResponse{
-		Message: "Successfully updating a news",
+		Message: MsgForUpdatedNews,
 		Data:    nws,
 	}
 
@@ -155,7 +163,7 @@ func (n handler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		return web.NewRequestError(bareknews.ErrDataNotFound, http.StatusNotFound)
+		return bareknews.ErrInvalidUUID
 	}
 
 	err = n.service.Delete(ctx, id)
@@ -167,7 +175,7 @@ func (n handler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	payloadRes := map[string]interface{}{
-		"message": "Successfully deleting a news",
+		"message": MsgForDeletedNews,
 		"data":    struct{}{},
 	}
 
@@ -187,15 +195,16 @@ func (n handler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Requ
 // @Router       /news [get]
 func (n handler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	q := r.URL.Query()
-	topic := strings.TrimSpace(q.Get("topic"))
-	status := strings.TrimSpace(q.Get("status"))
-	rawCursor := strings.TrimSpace(q.Get("cursor"))
 
-	if rawCursor == "" {
-		rawCursor = "0"
+	topicParam := strings.TrimSpace(q.Get("topic"))
+	statusParam := strings.TrimSpace(q.Get("status"))
+	rawCursorParam := strings.TrimSpace(q.Get("cursor"))
+
+	if rawCursorParam == "" {
+		rawCursorParam = "0"
 	}
 
-	cursor, err := strconv.ParseInt(rawCursor, 10, 64)
+	cursor, err := strconv.ParseInt(rawCursorParam, 10, 64)
 	if err != nil {
 		return web.NewRequestError(errors.New("failed to convert the cursor"), http.StatusBadRequest)
 	}
@@ -203,26 +212,26 @@ func (n handler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	newsRes := make([]NewsOut, 0)
 
 	switch {
-	case topic != "" && status != "":
-		nws, err := n.service.GetAllByTopic(ctx, topic, cursor)
+	case topicParam != "" && statusParam != "":
+		nws, err := n.service.GetAllByTopic(ctx, topicParam, cursor)
 		if err != nil {
 			return err
 		}
 
 		for _, n := range nws {
-			if n.Status == status {
+			if n.Status == statusParam {
 				newsRes = append(newsRes, n)
 			}
 		}
-	case topic == "" && status != "":
-		nws, err := n.service.GetAllByStatus(ctx, status, cursor)
+	case topicParam == "" && statusParam != "":
+		nws, err := n.service.GetAllByStatus(ctx, statusParam, cursor)
 		if err != nil {
 			return err
 		}
 
 		newsRes = append(newsRes, nws...)
-	case topic != "" && status == "":
-		nws, err := n.service.GetAllByTopic(ctx, topic, cursor)
+	case topicParam != "" && statusParam == "":
+		nws, err := n.service.GetAllByTopic(ctx, topicParam, cursor)
 		if err != nil {
 			return err
 		}
@@ -238,7 +247,7 @@ func (n handler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	payloadRes := web.GeneralResponse{
-		Message: "Successfuly getting all news",
+		Message: MsgForGettingAllNews,
 		Data:    newsRes,
 	}
 

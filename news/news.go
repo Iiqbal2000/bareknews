@@ -32,6 +32,23 @@ func Create(title, body string, status bareknews.Status, tags []uuid.UUID, timeN
 	}
 }
 
+func Update(id uuid.UUID, title, body string, status bareknews.Status, tags []uuid.UUID, dateCreated, dateUpdated int64) *News {
+	post := bareknews.Post{
+		ID:    id,
+		Title: title,
+		Body:  body,
+	}
+
+	return &News{
+		Post:   post,
+		Status: status,
+		Slug:   bareknews.NewSlug(post.Title),
+		TagsID: tags,
+		DateCreated: dateCreated,
+		DateUpdated: dateUpdated,
+	}
+}
+
 func (n News) Validate() error {
 	if err := n.Post.Validate(); err != nil {
 		return err

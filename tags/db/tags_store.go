@@ -44,7 +44,7 @@ func (t Store) Save(ctx context.Context, tag tags.Tags) error {
 			}
 		}
 
-		return errors.Wrap(err, "when executing the query")
+		return errors.Wrap(err, "when executing the query (tags.db.Save)")
 	}
 
 	return nil
@@ -65,7 +65,12 @@ func (t Store) Update(ctx context.Context, tag tags.Tags) error {
 	query, args := builder.Build()
 	_, err := t.conn.ExecContext(ctx, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "when executing the query")
+		if possibleErr, ok := err.(sqlite3.Error); ok {
+			if possibleErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+				return bareknews.ErrDataAlreadyExist
+			}
+		}
+		return errors.Wrap(err, "when executing the query (tags.db.Update)")
 	}
 
 	return nil
@@ -83,7 +88,7 @@ func (t Store) Delete(ctx context.Context, id uuid.UUID) error {
 
 	_, err := t.conn.ExecContext(ctx, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "when executing the query")
+		return errors.Wrap(err, "when executing the query (tags.db.Delete)")
 	}
 
 	return nil
@@ -109,7 +114,7 @@ func (t Store) GetById(ctx context.Context, id uuid.UUID) (*tags.Tags, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &tags.Tags{}, sql.ErrNoRows
 		} else {
-			return &tags.Tags{}, errors.Wrap(err, "when scanning the data")
+			return &tags.Tags{}, errors.Wrap(err, "when scanning the data (tags.db.GetById)")
 		}
 	}
 
@@ -141,7 +146,7 @@ func (t Store) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, erro
 
 	rows, err := t.conn.QueryContext(ctx, query, args...)
 	if err != nil {
-		return []tags.Tags{}, errors.Wrap(err, "when executing the query")
+		return []tags.Tags{}, errors.Wrap(err, "when executing the query (tags.db.GetByIds)")
 	}
 
 	defer rows.Close()
@@ -153,7 +158,7 @@ func (t Store) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, erro
 		var slug bareknews.Slug
 		err := rows.Scan(&label.ID, &label.Name, &slug)
 		if err != nil {
-			return []tags.Tags{}, errors.Wrap(err, "when scanning the data")
+			return []tags.Tags{}, errors.Wrap(err, "when scanning the data (tags.db.GetByIds)")
 		}
 
 		results = append(results, tags.Tags{
@@ -163,7 +168,7 @@ func (t Store) GetByIds(ctx context.Context, ids []uuid.UUID) ([]tags.Tags, erro
 	}
 
 	if rows.Err() != nil {
-		return []tags.Tags{}, errors.Wrap(err, "when iterating rows")
+		return []tags.Tags{}, errors.Wrap(err, "when iterating rows (tags.db.GetByIds)")
 	}
 
 	return results, nil
@@ -179,7 +184,7 @@ func (t Store) GetAll(ctx context.Context) ([]tags.Tags, error) {
 
 	rows, err := t.conn.QueryContext(ctx, query, args...)
 	if err != nil {
-		return []tags.Tags{}, errors.Wrap(err, "when executing the query")
+		return []tags.Tags{}, errors.Wrap(err, "when executing the query (tags.db.GetAll)")
 	}
 
 	defer rows.Close()
@@ -191,7 +196,7 @@ func (t Store) GetAll(ctx context.Context) ([]tags.Tags, error) {
 		var slug bareknews.Slug
 		err := rows.Scan(&label.ID, &label.Name, &slug)
 		if err != nil {
-			return []tags.Tags{}, errors.Wrap(err, "when executing the data")
+			return []tags.Tags{}, errors.Wrap(err, "when executing the data (tags.db.GetAll)")
 		}
 
 		results = append(results, tags.Tags{
@@ -201,7 +206,7 @@ func (t Store) GetAll(ctx context.Context) ([]tags.Tags, error) {
 	}
 
 	if rows.Err() != nil {
-		return []tags.Tags{}, errors.Wrap(err, "when iterating rows")
+		return []tags.Tags{}, errors.Wrap(err, "when iterating rows (tags.db.GetAll)")
 	}
 
 	return results, nil
@@ -221,7 +226,7 @@ func (t Store) Count(ctx context.Context, id uuid.UUID) (int, error) {
 	var c int
 	err := row.Scan(&c)
 	if err != nil {
-		return c, errors.Wrap(err, "when scanning the data")
+		return c, errors.Wrap(err, "when scanning the data (tags.db.Count)")
 	}
 
 	if c == 0 {
@@ -244,7 +249,7 @@ func (t Store) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, er
 
 	rows, err := t.conn.QueryContext(ctx, query, args...)
 	if err != nil {
-		return []tags.Tags{}, errors.Wrap(err, "when executing the query")
+		return []tags.Tags{}, errors.Wrap(err, "when executing the query (tags.db.GetByNames)")
 	}
 
 	defer rows.Close()
@@ -256,7 +261,7 @@ func (t Store) GetByNames(ctx context.Context, names ...string) ([]tags.Tags, er
 		var slug bareknews.Slug
 		err := rows.Scan(&label.ID, &label.Name, &slug)
 		if err != nil {
-			return []tags.Tags{}, errors.Wrap(err, "when scanning the data")
+			return []tags.Tags{}, errors.Wrap(err, "when scanning the data (tags.db.GetByNames)")
 		}
 
 		results = append(results, tags.Tags{
@@ -288,7 +293,7 @@ func (t Store) GetByName(ctx context.Context, name string) (tags.Tags, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return tags.Tags{}, sql.ErrNoRows
 		} else {
-			return tags.Tags{}, errors.Wrap(err, "when scannig the data")
+			return tags.Tags{}, errors.Wrap(err, "when scannig the data (tags.db.GetByName)")
 		}
 	}
 
